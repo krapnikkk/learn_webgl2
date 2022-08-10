@@ -1,19 +1,23 @@
 
 const vertexShaderSource = `#version 300 es
     layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec3 aColor;
+
+    out vec3 outColor;
     void main()
     {
-        gl_Position = vec4(aPos.x,aPos.y,aPos.z,1.0);
+        gl_Position = vec4(aPos,1.0);
+        outColor = aColor;
     }
 `;
 const fragmentShaderSource = `#version 300 es
     precision mediump float;
     out vec4 FragColor;
 
-    uniform vec4 uColor;
+    in vec3 outColor;
     void main()
     {
-        FragColor = uColor;
+        FragColor = vec4(outColor,1.0f);
     }
 `;
 
@@ -56,12 +60,13 @@ function main() {
     gl.deleteShader(fragmentShader);
 
     let vertices = new Float32Array([
-        0.5, -0.5, 0.0,  // bottom right
-        -0.5, -0.5, 0.0,  // bottom left
-        0.0, 0.5, 0.0   // top 
+        // positions         // colors
+        0.5, -0.5, 0.0, 1.0, 0.0, 0.0,  // bottom right
+        -0.5, -0.5, 0.0, 0.0, 1.0, 0.0,  // bottom left
+        0.0, 0.5, 0.0, 0.0, 0.0, 1.0   // top 
     ]);
 
-    let layoutPosIdx = 0;
+    let positionLoc = 0, colorLoc = 1;
 
     let vao = gl.createVertexArray();
     let vbo = gl.createBuffer();
@@ -71,13 +76,14 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    gl.vertexAttribPointer(layoutPosIdx, 3, gl.FLOAT, gl.FALSE, 3 * vertices.BYTES_PER_ELEMENT, 0);
-    gl.enableVertexAttribArray(layoutPosIdx);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 6 * vertices.BYTES_PER_ELEMENT, 0);
+    gl.enableVertexAttribArray(positionLoc);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    gl.bindVertexArray(vao);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 6 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
+    gl.enableVertexAttribArray(colorLoc);
 
-
+    
+    
     function render(time) {
         
         
@@ -86,10 +92,9 @@ function main() {
         
         gl.useProgram(program);
         
-        let greenValue = (Math.sin(time/1000)) / 2 + 0.5;
-        let vertexColorLocation = gl.getUniformLocation(program, "uColor");
-        gl.uniform4f(vertexColorLocation, 0.0, greenValue, 0.0, 1.0);
+        gl.bindVertexArray(vao);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
+
         requestAnimationFrame(render);
     }
 
