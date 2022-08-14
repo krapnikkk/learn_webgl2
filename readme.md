@@ -18,4 +18,5 @@ https://learnopengl.com/ [webgl2 version]
 | shaders_exercise1 | add a - to the y position | [shaders_exercise1](https://krapnikkk.github.io/learn_webgl2/1_basic/3.4_shaders_exercise1) |
 | shaders_exercise2 | add the xOffset to the x position | [shaders_exercise2](https://krapnikkk.github.io/learn_webgl2/1_basic/3.5_shaders_exercise2) |
 | shaders_exercise3 | negative value in color | [shaders_exercise3](https://krapnikkk.github.io/learn_webgl2/1_basic/3.4_shaders_exercise3) |
+| texture | draw the texture | [texture](https://krapnikkk.github.io/learn_webgl2/1_basic/4.1_texture) |
 
