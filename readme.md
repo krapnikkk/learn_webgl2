@@ -19,4 +19,9 @@ https://learnopengl.com/ [webgl2 version]
 | shaders_exercise2 | add the xOffset to the x position | [shaders_exercise2](https://krapnikkk.github.io/learn_webgl2/1_basic/3.5_shaders_exercise2) |
 | shaders_exercise3 | negative value in color | [shaders_exercise3](https://krapnikkk.github.io/learn_webgl2/1_basic/3.4_shaders_exercise3) |
 | texture | draw the texture | [texture](https://krapnikkk.github.io/learn_webgl2/1_basic/4.1_texture) |
-
+| textures_combined | combine two textures | [textures_combined](https://krapnikkk.github.io/learn_webgl2/1_basic/4.2_textures_combined) |
+| textures_exercise1 | flip texture by glsl | [textures_exercise1](https://krapnikkk.github.io/learn_webgl2/1_basic/4.3_textures_exercise1) |
+| textures_exercise2 | texture filter | [textures_exercise2](https://krapnikkk.github.io/learn_webgl2/1_basic/4.4_textures_exercise2) |
+| textures_exercise3 | texture mipmap | [textures_exercise3](https://krapnikkk.github.io/learn_webgl2/1_basic/4.5_textures_exercise3) |
+| textures_exercise4 | texture mix | [textures_exercise4](https://krapnikkk.github.io/learn_webgl2/1_basic/4.6_textures_exercise4) |
+| transformations | transformations | [transformations](https://krapnikkk.github.io/learn_webgl2/1_basic/5.1_transformations) |

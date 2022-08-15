@@ -2,35 +2,64 @@ async function main() {
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
+    gl.enable(gl.DEPTH_TEST);
+
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
 
     let vertices = new Float32Array([
-        // positions          // texture coords
-        0.5, 0.5, 0.0, 1.0, 1.0, // top right
-        0.5, -0.5, 0.0, 1.0, 0.0, // bottom right
-        -0.5, -0.5, 0.0, 0.0, 0.0, // bottom left
-        -0.5, 0.5, 0.0, 0.0, 1.0  // top left 
-    ]);
+        -0.5, -0.5, -0.5, 0.0, 0.0,
+        0.5, -0.5, -0.5, 1.0, 0.0,
+        0.5, 0.5, -0.5, 1.0, 1.0,
+        0.5, 0.5, -0.5, 1.0, 1.0,
+        -0.5, 0.5, -0.5, 0.0, 1.0,
+        -0.5, -0.5, -0.5, 0.0, 0.0,
 
-    let indices = new Uint8Array([
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
+        -0.5, -0.5, 0.5, 0.0, 0.0,
+        0.5, -0.5, 0.5, 1.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 1.0,
+        0.5, 0.5, 0.5, 1.0, 1.0,
+        -0.5, 0.5, 0.5, 0.0, 1.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0,
+
+        -0.5, 0.5, 0.5, 1.0, 0.0,
+        -0.5, 0.5, -0.5, 1.0, 1.0,
+        -0.5, -0.5, -0.5, 0.0, 1.0,
+        -0.5, -0.5, -0.5, 0.0, 1.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0,
+        -0.5, 0.5, 0.5, 1.0, 0.0,
+
+        0.5, 0.5, 0.5, 1.0, 0.0,
+        0.5, 0.5, -0.5, 1.0, 1.0,
+        0.5, -0.5, -0.5, 0.0, 1.0,
+        0.5, -0.5, -0.5, 0.0, 1.0,
+        0.5, -0.5, 0.5, 0.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 0.0,
+
+        -0.5, -0.5, -0.5, 0.0, 1.0,
+        0.5, -0.5, -0.5, 1.0, 1.0,
+        0.5, -0.5, 0.5, 1.0, 0.0,
+        0.5, -0.5, 0.5, 1.0, 0.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0,
+        -0.5, -0.5, -0.5, 0.0, 1.0,
+
+        -0.5, 0.5, -0.5, 0.0, 1.0,
+        0.5, 0.5, -0.5, 1.0, 1.0,
+        0.5, 0.5, 0.5, 1.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 0.0,
+        -0.5, 0.5, 0.5, 0.0, 0.0,
+        -0.5, 0.5, -0.5, 0.0, 1.0
     ]);
 
     let positionLoc = 0, texCoordLoc = 1;
 
     let vao = gl.createVertexArray();
     let vbo = gl.createBuffer();
-    let ebo = gl.createBuffer();
 
     gl.bindVertexArray(vao);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
     gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 5 * vertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
@@ -87,7 +116,7 @@ async function main() {
         let model = glMatrix.mat4.create();
         let view = glMatrix.mat4.create();
         let projection = glMatrix.mat4.create();
-        glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(-55), glMatrix.vec3.fromValues(1.0, 0.0, 0.0));
+        glMatrix.mat4.rotate(model, model, time/1000, glMatrix.vec3.fromValues(0.5, 1.0, 0.0));
         glMatrix.mat4.translate(view, view, glMatrix.vec3.fromValues(0.0, 0.0, -3.0));
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(45), gl.canvas.width / gl.canvas.height, 0.1, 100)
 
@@ -95,7 +124,7 @@ async function main() {
         gl.uniformMatrix4fv(viewLoc, false, view);
         gl.uniformMatrix4fv(projectionLoc, false, projection);
 
-        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
 
         requestAnimationFrame(render);
     }
