@@ -45,8 +45,8 @@ class Shader {
         this.gl.attachShader(this.ID, fragmentShader);
         this.gl.linkProgram(this.ID);
         this.checkCompileErrors(this.ID, "PROGRAM");
-        // this.gl.deleteShader(vertexShader);
-        // this.gl.deleteShader(fragmentShader);
+        this.gl.deleteShader(vertexShader);
+        this.gl.deleteShader(fragmentShader);
     }
 
     setBool(name, value) {
