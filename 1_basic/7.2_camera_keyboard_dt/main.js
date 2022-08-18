@@ -17,23 +17,23 @@ async function main() {
 
     document.onkeydown = (e) => {
         let cameraSpeed = 2.5 * deltaTime;
-        // cameraSpeed = 0.5
+        let cameraTarget = glMatrix.vec3.create();
         if (e.code == "ArrowUp") {
-            glMatrix.vec3.multiply(cameraFront, cameraFront, glMatrix.vec3.fromValues(cameraSpeed,cameraSpeed,cameraSpeed));
-            glMatrix.vec3.add(cameraPos, cameraPos, cameraFront);
+            glMatrix.vec3.scale(cameraTarget, cameraFront, cameraSpeed);
+            glMatrix.vec3.add(cameraPos, cameraPos, cameraTarget);
         } else if (e.code == "ArrowDown") {
-            glMatrix.vec3.multiply(cameraFront, cameraFront, glMatrix.vec3.fromValues(cameraSpeed,cameraSpeed,cameraSpeed));
-            glMatrix.vec3.subtract(cameraPos, cameraPos, cameraFront);
+            glMatrix.vec3.scale(cameraTarget, cameraFront, cameraSpeed);
+            glMatrix.vec3.subtract(cameraPos, cameraPos, cameraTarget);
         } else if (e.code == "ArrowLeft") {
-            let crossCamera = glMatrix.vec3.cross(cameraFront, cameraFront, cameraUp);
-            glMatrix.vec3.normalize(crossCamera, crossCamera);
-            glMatrix.vec3.multiply(crossCamera, crossCamera, glMatrix.vec3.fromValues(cameraSpeed,cameraSpeed,cameraSpeed));
-            glMatrix.vec3.subtract(cameraPos, cameraPos, crossCamera);
+            glMatrix.vec3.cross(cameraTarget, cameraFront, cameraUp);
+            glMatrix.vec3.normalize(cameraTarget, cameraTarget);
+            glMatrix.vec3.scale(cameraTarget, cameraTarget, cameraSpeed);
+            glMatrix.vec3.subtract(cameraPos, cameraPos, cameraTarget);
         } else if (e.code == "ArrowRight") {
-            let crossCamera = glMatrix.vec3.cross(cameraFront, cameraFront, cameraUp);
-            glMatrix.vec3.normalize(crossCamera, crossCamera);
-            glMatrix.vec3.multiply(crossCamera, crossCamera, glMatrix.vec3.fromValues(cameraSpeed,cameraSpeed,cameraSpeed));
-            glMatrix.vec3.add(cameraPos, cameraPos, crossCamera);
+            glMatrix.vec3.cross(cameraTarget, cameraFront, cameraUp);
+            glMatrix.vec3.normalize(cameraTarget, cameraTarget);
+            glMatrix.vec3.scale(cameraTarget, cameraTarget, cameraSpeed);
+            glMatrix.vec3.add(cameraPos, cameraPos, cameraTarget);
         }
     }
 
@@ -166,7 +166,7 @@ async function main() {
         let radius = 10.0;
 
         let cameraTarget = glMatrix.vec3.create();
-        glMatrix.vec3.add(cameraTarget, cameraPos, cameraFront)
+        glMatrix.vec3.add(cameraTarget, cameraPos, cameraFront);
         glMatrix.mat4.lookAt(view, cameraPos, cameraTarget, cameraUp);
 
         gl.uniformMatrix4fv(viewLoc, false, view);
