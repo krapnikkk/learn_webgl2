@@ -6,5 +6,8 @@ https://learnopengl.com/ [webgl2 version]
 
 | title        | details                 | preview |
 | ------------ | ----------------------- | ------- |
-| 1_basic | basic |  [hello_window](https://krapnikkk.github.io/learn_webgl2/1_basic/)       |
-| 2_lighting | lighting |  [hello_triangle](https://krapnikkk.github.io/learn_webgl2/2_lighting/)       |
+| 1_basic | basic |  [basic](https://krapnikkk.github.io/learn_webgl2/1_basic/)       |
+| 2_lighting | lighting |  [lighting](https://krapnikkk.github.io/learn_webgl2/2_lighting/)       |
+
+preview:http://106.55.102.172:1234/
+watch:nohup anywhere -p 1234 -s

@@ -5,7 +5,7 @@ class Shader {
         this.fragmentPath = fragmentPath;
     }
 
-    async initialize(){
+    async initialize() {
         let vertex = await this.loadFile(this.vertexPath);
         let fragment = await this.loadFile(this.fragmentPath);
         let vertexShader = this.createShader(vertex, this.gl.VERTEX_SHADER);
@@ -59,6 +59,14 @@ class Shader {
 
     setFloat(name, value) {
         this.gl.uniform1f(this.gl.getUniformLocation(this.ID, name), value);
+    }
+
+    setVec3(name, value) {
+        this.gl.uniform3fv(this.gl.getUniformLocation(this.ID, name), value);
+    }
+
+    setMat4(name, value,tranpose = false) {
+        this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.ID, name), tranpose, value);
     }
 
     checkCompileErrors(shader, type) {
