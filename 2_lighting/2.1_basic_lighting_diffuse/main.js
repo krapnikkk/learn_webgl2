@@ -1,4 +1,6 @@
 async function main() {
+    let stats = new Stats();
+    document.body.appendChild(stats.dom); 
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
@@ -6,9 +8,15 @@ async function main() {
 
     let lightShader = new Shader(gl, "light.vs", "light.fs");
     await lightShader.initialize();
+    lightShader.use();
+    lightShader.setFloat("ambientStrength",0.1);
 
     let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
     await cubeShader.initialize();
+
+
+    const gui = new dat.GUI({ name: "lighting" });
+    addGUI(lightShader);
 
     let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
     let camera = new Camera(cameraPos);
@@ -22,7 +30,6 @@ async function main() {
 
     document.onkeydown = (e) => {
         camera.onKeydown(e.code, deltaTime);
-        // camera.position[1] = 0;
     }
 
     canvas.onmousemove = (e) => {
@@ -152,10 +159,24 @@ async function main() {
         gl.bindVertexArray(cubeVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
+        stats.update();
+        
         requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);
+
+    function addGUI(shader){
+        let lightFolder = gui.addFolder("Ambient");
+        let ambient = {
+            ambientStrength: 0.1
+        }
+
+        lightFolder.add(ambient, "ambientStrength", 0.1, 1).onChange((ambientStrength)=>{
+            shader.use();
+            shader.setFloat("ambientStrength", ambientStrength);
+        })
+    }
 }
 
 async function loadImage(url) {

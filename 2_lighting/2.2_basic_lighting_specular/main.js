@@ -1,4 +1,7 @@
 async function main() {
+    let stats = new Stats();
+    document.body.appendChild(stats.dom);
+
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
@@ -6,12 +9,18 @@ async function main() {
 
     let lightShader = new Shader(gl, "light.vs", "light.fs");
     await lightShader.initialize();
+    lightShader.use();
+    lightShader.setFloat("ambientStrength",0.1);
+    lightShader.setFloat("shininess", 2.0);
 
     let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
     await cubeShader.initialize();
 
     let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
     let camera = new Camera(cameraPos);
+
+    const gui = new dat.GUI({ name: "lighting" });
+    addGUI(lightShader);
 
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
@@ -20,12 +29,23 @@ async function main() {
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
     let lightPos = glMatrix.vec3.fromValues(1.2, 1.0, 2.0);
 
+    let moveLock = true;
     document.onkeydown = (e) => {
         camera.onKeydown(e.code, deltaTime);
-        // camera.position[1] = 0;
+
+        if (e.code == "Escape") {
+            moveLock = true;
+        }
+    }
+
+    canvas.onclick = (e) => {
+        moveLock = false;
     }
 
     canvas.onmousemove = (e) => {
+        if (moveLock) {
+            return;
+        }
         let { clientX, clientY } = e;
         if (isFirstMouse) {
             lastX = clientX;
@@ -153,10 +173,32 @@ async function main() {
         gl.bindVertexArray(lightVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
+        stats.update();
         requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);
+
+    function addGUI(shader) {
+        let ambientFolder = gui.addFolder("Ambient");
+        let specularFolder = gui.addFolder("Specular");
+        let ambient = {
+            ambientStrength: 0.1
+        },
+        specular = {
+            shininess:2
+        }
+
+        ambientFolder.add(ambient, "ambientStrength", 0.1, 1).onChange((ambientStrength) => {
+            shader.use();
+            shader.setFloat("ambientStrength", ambientStrength);
+        })
+
+        specularFolder.add(specular, "shininess", 1, 8).onChange((shininess) => {
+            shader.use();
+            shader.setFloat("shininess", Math.pow(2,shininess));
+        })
+    }
 }
 
 async function loadImage(url) {
