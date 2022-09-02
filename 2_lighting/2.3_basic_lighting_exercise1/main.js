@@ -1,6 +1,7 @@
 async function main() {
     let stats = new Stats();
-    document.body.appendChild(stats.dom); 
+    document.body.appendChild(stats.dom);
+
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
@@ -10,16 +11,18 @@ async function main() {
     await lightShader.initialize();
     lightShader.use();
     lightShader.setFloat("ambientStrength",0.1);
+    
+    lightShader.setFloat("specularStrength",0.1);
+    lightShader.setFloat("shininess", 2.0);
 
     let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
     await cubeShader.initialize();
 
+    let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
+    let camera = new Camera(cameraPos);
 
     const gui = new dat.GUI({ name: "lighting" });
     addGUI(lightShader);
-
-    let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
-    let camera = new Camera(cameraPos);
 
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
@@ -28,11 +31,24 @@ async function main() {
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
     let lightPos = glMatrix.vec3.fromValues(1.2, 1.0, 2.0);
 
+    let moveLock = true;
     document.onkeydown = (e) => {
         camera.onKeydown(e.code, deltaTime);
+
+        if (e.code == "Escape") {
+            moveLock = true;
+        }
+    }
+
+    canvas.onclick = (e) => {
+        moveLock = false;
+        isFirstMouse = true;
     }
 
     canvas.onmousemove = (e) => {
+        if (moveLock) {
+            return;
+        }
         let { clientX, clientY } = e;
         if (isFirstMouse) {
             lastX = clientX;
@@ -131,10 +147,14 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.sin(currentFrame/2);
+        glMatrix.vec3.set(lightPos,x,y,lightPos[2]);
+
         lightShader.use();
         lightShader.setVec3("objectColor", glMatrix.vec3.fromValues(1.0, 0.5, 0.3));
         lightShader.setVec3("lightColor", glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
         lightShader.setVec3("lightPos", lightPos);
+        lightShader.setVec3("viewPos", camera.position);
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
@@ -144,7 +164,7 @@ async function main() {
         let model = glMatrix.mat4.create();
         lightShader.setMat4("model", model);
 
-        gl.bindVertexArray(lightVao);
+        gl.bindVertexArray(cubeVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
         cubeShader.use();
@@ -156,25 +176,39 @@ async function main() {
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
         cubeShader.setMat4("model", model);
 
-        gl.bindVertexArray(cubeVao);
+        gl.bindVertexArray(lightVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
         stats.update();
-        
         requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);
 
-    function addGUI(shader){
-        let lightFolder = gui.addFolder("Ambient");
+    function addGUI(shader) {
+        let ambientFolder = gui.addFolder("Ambient");
+        let specularFolder = gui.addFolder("Specular");
         let ambient = {
             ambientStrength: 0.1
+        },
+        specular = {
+            shininess:2,
+            specularStrength: 0.5
         }
 
-        lightFolder.add(ambient, "ambientStrength", 0, 1).onChange((ambientStrength)=>{
+        ambientFolder.add(ambient, "ambientStrength", 0, 1).onChange((ambientStrength) => {
             shader.use();
             shader.setFloat("ambientStrength", ambientStrength);
+        })
+
+        specularFolder.add(specular, "shininess", 1, 8).onChange((shininess) => {
+            shader.use();
+            shader.setFloat("shininess", Math.pow(2,shininess));
+        })
+
+        specularFolder.add(specular, "specularStrength", 0, 1).onChange((specularStrength) => {
+            shader.use();
+            shader.setFloat("specularStrength", specularStrength);
         })
     }
 }

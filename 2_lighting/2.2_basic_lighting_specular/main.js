@@ -11,6 +11,7 @@ async function main() {
     await lightShader.initialize();
     lightShader.use();
     lightShader.setFloat("ambientStrength",0.1);
+    lightShader.setFloat("specularStrength",0.1);
     lightShader.setFloat("shininess", 2.0);
 
     let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
@@ -40,6 +41,7 @@ async function main() {
 
     canvas.onclick = (e) => {
         moveLock = false;
+        isFirstMouse = true;
     }
 
     canvas.onmousemove = (e) => {
@@ -186,10 +188,11 @@ async function main() {
             ambientStrength: 0.1
         },
         specular = {
-            shininess:2
+            shininess:2,
+            specularStrength: 0.5
         }
 
-        ambientFolder.add(ambient, "ambientStrength", 0.1, 1).onChange((ambientStrength) => {
+        ambientFolder.add(ambient, "ambientStrength", 0, 1).onChange((ambientStrength) => {
             shader.use();
             shader.setFloat("ambientStrength", ambientStrength);
         })
@@ -197,6 +200,11 @@ async function main() {
         specularFolder.add(specular, "shininess", 1, 8).onChange((shininess) => {
             shader.use();
             shader.setFloat("shininess", Math.pow(2,shininess));
+        })
+
+        specularFolder.add(specular, "specularStrength", 0, 1).onChange((specularStrength) => {
+            shader.use();
+            shader.setFloat("specularStrength", specularStrength);
         })
     }
 }
