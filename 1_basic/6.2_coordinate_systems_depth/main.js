@@ -113,7 +113,7 @@ async function main() {
         gl.bindTexture(gl.TEXTURE_2D, texture2);
         gl.bindVertexArray(vao);
 
-        let model = glMatrix.mat4.create();
+        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = glMatrix.mat4.create();
         let projection = glMatrix.mat4.create();
         glMatrix.mat4.rotate(model, model, time/1000, glMatrix.vec3.fromValues(0.5, 1.0, 0.0));

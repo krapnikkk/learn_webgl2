@@ -127,7 +127,7 @@ async function main() {
     gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, gl.FALSE, 6 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(normalLoc);
 
-    // for lightShader
+    
     let lightVao = gl.createVertexArray();
     gl.bindVertexArray(lightVao);
     // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
@@ -161,7 +161,7 @@ async function main() {
         lightShader.setMat4("projection", projection);
         lightShader.setMat4("view", view);
 
-        let model = glMatrix.mat4.create();
+        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         lightShader.setMat4("model", model);
 
         gl.bindVertexArray(cubeVao);
@@ -171,7 +171,7 @@ async function main() {
         cubeShader.setMat4("projection", projection);
         cubeShader.setMat4("view", view);
 
-        model = glMatrix.mat4.create();
+        model = glMatrix.mat4.identity(model);
         glMatrix.mat4.translate(model, model, lightPos);
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
         cubeShader.setMat4("model", model);

@@ -39,7 +39,7 @@ class Camera {
     }
 
     updateCameraVectors() {
-        let front = glMatrix.vec3.create();
+        let front = glMatrix.vec3.fromValues(1,1,1);
         let x = Math.cos(glMatrix.glMatrix.toRadian(this.yaw)) * Math.cos(glMatrix.glMatrix.toRadian(this.pitch));
         let y = Math.sin(glMatrix.glMatrix.toRadian(this.pitch));
         let z = Math.sin(glMatrix.glMatrix.toRadian(this.yaw)) * Math.cos(glMatrix.glMatrix.toRadian(this.pitch));

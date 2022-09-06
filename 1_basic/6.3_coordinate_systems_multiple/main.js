@@ -135,7 +135,7 @@ async function main() {
         gl.uniformMatrix4fv(projectionLoc, false, projection);
         
         for (let i = 0; i < cubePositions.length; i++) {
-            let model = glMatrix.mat4.create();
+            let model = glMatrix.mat4.identity(glMatrix.mat4.create());
             glMatrix.mat4.translate(model, model, cubePositions[i]);
             let angle = 20 * i;
             glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(angle), glMatrix.vec3.fromValues(1.0, 0.3, 0.5));

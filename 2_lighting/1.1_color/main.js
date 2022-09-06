@@ -128,7 +128,7 @@ async function main() {
         
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
-        let model = glMatrix.mat4.create();
+        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         
         colorShader.setMat4("projection",projection);
         colorShader.setMat4("view",view);
@@ -140,7 +140,7 @@ async function main() {
         cubeShader.use();
         cubeShader.setMat4("projection",projection);
         cubeShader.setMat4("view",view);
-        model = glMatrix.mat4.create();
+        model = glMatrix.mat4.identity(model);
         glMatrix.mat4.translate(model,model,lightPos);
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
         cubeShader.setMat4("model", model);
