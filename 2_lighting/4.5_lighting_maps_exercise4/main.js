@@ -136,9 +136,11 @@ async function main() {
 
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");
     let specularMap = await loadTexture(gl, "../../resources/textures/container2_specular.png");
+    let emissionMap = await loadTexture(gl, "../../resources/textures/matrix.jpg");
     lightShader.use();
     lightShader.setInt("material.diffuse", 0);
     lightShader.setInt("material.specular", 1);
+    lightShader.setInt("material.emission", 2);
 
     let projection = glMatrix.mat4.create();
 
@@ -149,13 +151,16 @@ async function main() {
 
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.sin(currentFrame / 2);
+        let step = Math.sin(currentFrame);
+        let x = 1.0 + step * 2.0, y = Math.sin(currentFrame / 2);
         glMatrix.vec3.set(lightPos, x, y, lightPos[2]);
 
         lightShader.use();
         lightShader.setVec3("light.position", lightPos);
         lightShader.setVec3("viewPos", camera.position);
+
+        lightShader.setFloat("emission.move", currentFrame);
+        lightShader.setFloat("emission.strength", step);
 
         // lightShader.setVec3("light.ambient", glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
         // lightShader.setVec3("light.diffuse", glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
@@ -167,12 +172,15 @@ async function main() {
         lightShader.setMat4("view", view);
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.rotate(model,model,currentFrame, glMatrix.vec3.fromValues(0.0, 1.0, 0.0))
         lightShader.setMat4("model", model);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, diffuseMap);
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, specularMap);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, emissionMap);
 
         gl.bindVertexArray(cubeVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);

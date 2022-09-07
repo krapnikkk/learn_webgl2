@@ -135,7 +135,7 @@ async function main() {
     gl.enableVertexAttribArray(positionLoc);
 
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");
-    let specularMap = await loadTexture(gl, "../../resources/textures/container2_specular.png");
+    let specularMap = await loadTexture(gl, "../../resources/textures/lighting_maps_specular_color.png");
     lightShader.use();
     lightShader.setInt("material.diffuse", 0);
     lightShader.setInt("material.specular", 1);
