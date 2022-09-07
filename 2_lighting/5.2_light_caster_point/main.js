@@ -15,15 +15,15 @@ async function main() {
 
     let cameraPos = glMatrix.vec3.fromValues(0, 0, 3);
     let camera = new Camera(cameraPos);
-
-    addGUI(lightShader);
-
+  
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
     let lastFrame = 0.0;
     let isFirstMouse = true;
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
     let lightPos = glMatrix.vec3.fromValues(0.0, 0.0, 1.0);
+
+    addGUI(lightShader);
 
     let moveLock = true;
     document.onkeydown = (e) => {
@@ -35,7 +35,11 @@ async function main() {
     }
 
     canvas.onclick = (e) => {
-        moveLock = false;
+        if(moveLock){
+            moveLock = false;
+        }else{
+            moveLock = true;
+        }
         isFirstMouse = true;
     }
 
@@ -109,14 +113,15 @@ async function main() {
 
     let cubePositions = [
         glMatrix.vec3.fromValues(0.0, 0.0, 0.0),
-        glMatrix.vec3.fromValues(1.5, -1.5, 0.0),
-        glMatrix.vec3.fromValues(-1.5, 1.5, 0.0),
-        glMatrix.vec3.fromValues(-1.5, -1.5, 0.0),
-        glMatrix.vec3.fromValues(0.0, -1.5, 0.0),
-        glMatrix.vec3.fromValues(0.0, 1.5, 0.0),
-        glMatrix.vec3.fromValues(1.5, 1.5, 0.0),
-        glMatrix.vec3.fromValues(1.5, 0.0, 0.0),
-        glMatrix.vec3.fromValues(-1.5, 0.0, 0.0),
+        glMatrix.vec3.fromValues(2.0, 5.0, -15.0),
+        glMatrix.vec3.fromValues(-1.5, -2.2, -2.5),
+        glMatrix.vec3.fromValues(-3.8, -2.0, -12.3),
+        glMatrix.vec3.fromValues(2.4, -0.4, -3.5),
+        glMatrix.vec3.fromValues(-1.7, 3.0, -7.5),
+        glMatrix.vec3.fromValues(1.3, -2.0, -2.5),
+        glMatrix.vec3.fromValues(1.5, 2.0, -2.5),
+        glMatrix.vec3.fromValues(1.5, 0.2, -1.5),
+        glMatrix.vec3.fromValues(-1.3, 1.0, -1.5)
     ]
 
     let positionLoc = 0, normalLoc = 1, texCoords = 2;
@@ -174,7 +179,7 @@ async function main() {
         lightShader.setMat4("projection", projection);
         lightShader.setMat4("view", view);
 
-        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        let model = glMatrix.mat4.create();
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, diffuseMap);
@@ -276,6 +281,11 @@ async function main() {
             shader.setFloat("light.linear", linear);
             shader.setFloat("light.quadratic", quadratic);
         })
+
+        let lightPosFolder = lightGUI.addFolder("lightPos");
+        lightPosFolder.add(lightPos,0,-10,10,0.1);
+        lightPosFolder.add(lightPos,1,-10,10,0.1);
+        lightPosFolder.add(lightPos,2,-10,10,0.1);
     }
 }
 

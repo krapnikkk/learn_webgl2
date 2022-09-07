@@ -10,16 +10,20 @@ async function main() {
     let lightShader = new Shader(gl, "light.vs", "light.fs");
     await lightShader.initialize();
 
+    let lightCubeShader = new Shader(gl, "cube.vs", "cube.fs"); // light source
+    await lightCubeShader.initialize();
+
     let cameraPos = glMatrix.vec3.fromValues(0, 0, 3);
     let camera = new Camera(cameraPos);
-
-    addGUI(lightShader);
-
+  
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
     let lastFrame = 0.0;
     let isFirstMouse = true;
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
+    let lightPos = glMatrix.vec3.fromValues(0.0, 0.0, 1.0);
+
+    addGUI(lightShader);
 
     let moveLock = true;
     document.onkeydown = (e) => {
@@ -137,6 +141,12 @@ async function main() {
     gl.vertexAttribPointer(texCoords, 2, gl.FLOAT, gl.FALSE, 8 * vertices.BYTES_PER_ELEMENT, 6 * vertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoords);
 
+    let lightCubeVao = gl.createVertexArray();
+    gl.bindVertexArray(lightCubeVao);
+
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 8 * vertices.BYTES_PER_ELEMENT, 0);
+    gl.enableVertexAttribArray(positionLoc);
+
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");
     let specularMap = await loadTexture(gl, "../../resources/textures/container2_specular.png");
     lightShader.use();
@@ -153,9 +163,16 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        // let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.cos(currentFrame) * 2.0;
+        // glMatrix.vec3.set(lightPos, x, y, lightPos[2]);
+
         lightShader.use();
-        // lightShader.setVec3("light.direction", glMatrix.vec3.fromValues(-0.2, -1, -0.3));
+        // lightShader.setVec3("light.position", lightPos);
         lightShader.setVec3("viewPos", camera.position);
+
+        lightShader.setVec3("light.position", camera.position);
+        lightShader.setVec3("light.direction", camera.front);
+        lightShader.setFloat("light.cutOff", Math.cos(glMatrix.glMatrix.toRadian(12.5)));
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
@@ -177,6 +194,17 @@ async function main() {
             lightShader.setMat4("model", model);
             gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
+
+        lightCubeShader.use();
+        lightCubeShader.setMat4("projection", projection);
+        lightCubeShader.setMat4("view", view);
+        model = glMatrix.mat4.identity(model);
+        glMatrix.mat4.translate(model, model, lightPos);
+        glMatrix.mat4.scale(model, model, glMatrix.mat4.fromValues(0.2, 0.2, 0.2));
+        lightCubeShader.setMat4("model", model);
+
+        gl.bindVertexArray(lightCubeVao);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
 
         stats.update();
         requestAnimationFrame(render);
@@ -203,19 +231,14 @@ async function main() {
         let lightSpecularFolder = lightGUI.addFolder("Specular");
         let lightDiffuseFolder = lightGUI.addFolder("Diffuse");
         let lightAmbientFolder = lightGUI.addFolder("Ambient");
-        let lightDirectionFolder = lightGUI.addFolder("Direction");
         let light = {
             specular: [1 * 255, 1 * 255, 1 * 255],
             diffuse: [0.5 * 255, 0.5 * 255, 0.5 * 255],
-            ambient: [0.2 * 255, 0.2 * 255, 0.2 * 255],
-            direction: {
-                x: -0.2, y: -1, z: -0.3
-            }
+            ambient: [0.2 * 255, 0.2 * 255, 0.2 * 255]
         }
         shader.setVec3("light.specular", glMatrix.vec3.clone(light.specular.map((c) => c / 255)));
         shader.setVec3("light.diffuse", glMatrix.vec3.clone(light.diffuse.map((c) => c / 255)));
         shader.setVec3("light.ambient", glMatrix.vec3.clone(light.ambient.map((c) => c / 255)));
-        shader.setVec3("light.direction", glMatrix.vec3.clone(Object.values(light.direction)));
         lightSpecularFolder.addColor(light, "specular").onChange((val) => {
             shader.use();
             light.specular = val;
@@ -232,22 +255,37 @@ async function main() {
             light.ambient = val;
             shader.setVec3("light.ambient", glMatrix.vec3.clone(light.ambient.map((c) => c / 255)));
         })
-        lightDirectionFolder.add(light.direction,"x",-10,10,0.1).onChange((val) => {
+
+        let attenuationFolder = lightGUI.addFolder("distance");
+        shader.setFloat("light.constant", 1);
+        shader.setFloat("light.linear", 0.09);
+        shader.setFloat("light.quadratic", 0.032);
+        var attenuationMap =
+        {
+            distance: "32"
+        },
+            distanceMap = {
+                "7": { constant: 1, linear: 0.7, quadratic: 1.8 },
+                "13": { constant: 1, linear: 0.35, quadratic: 0.44 },
+                "20": { constant: 1, linear: 0.22, quadratic: 0.2 },
+                "32": { constant: 1, linear: 0.14, quadratic: 0.07 },
+                "50": { constant: 1, linear: 0.09, quadratic: 0.032 },
+                "65": { constant: 1, linear: 0.07, quadratic: 0.017 },
+                "100": { constant: 1, linear: 0.045, quadratic: 0.0075 }
+            };
+
+        attenuationFolder.add(attenuationMap, 'distance', ["7", "13", "20", "32", "50", "65", "100"]).onChange((val) => {
+            let { constant, linear, quadratic } = distanceMap[val];
             shader.use();
-            light.direction.x = val;
-            shader.setVec3("light.direction", glMatrix.vec3.clone(Object.values(light.direction)));
-        })
-        lightDirectionFolder.add(light.direction,"y",-10,10,0.1).onChange((val) => {
-            shader.use();
-            light.direction.y = val;
-            shader.setVec3("light.direction", glMatrix.vec3.clone(Object.values(light.direction)));
-        })
-        lightDirectionFolder.add(light.direction,"z",-10,10,0.1).onChange((val) => {
-            shader.use();
-            light.direction.z = val;
-            shader.setVec3("light.direction", glMatrix.vec3.clone(Object.values(light.direction)));
+            shader.setFloat("light.constant", constant);
+            shader.setFloat("light.linear", linear);
+            shader.setFloat("light.quadratic", quadratic);
         })
 
+        let lightPosFolder = lightGUI.addFolder("lightPos");
+        lightPosFolder.add(lightPos,0,-10,10,0.1);
+        lightPosFolder.add(lightPos,1,-10,10,0.1);
+        lightPosFolder.add(lightPos,2,-10,10,0.1);
     }
 }
 
