@@ -139,9 +139,6 @@ async function main() {
     gl.vertexAttribPointer(texCoords, 2, gl.FLOAT, gl.FALSE, 8 * vertices.BYTES_PER_ELEMENT, 6 * vertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoords);
 
-    let lightCubeVao = gl.createVertexArray();
-    gl.bindVertexArray(lightCubeVao);
-
     gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 8 * vertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
 
@@ -194,9 +191,6 @@ async function main() {
             lightShader.setMat4("model", model);
             gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
-
-        gl.bindVertexArray(lightCubeVao);
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
 
         stats.update();
         requestAnimationFrame(render);
