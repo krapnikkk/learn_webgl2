@@ -10,9 +10,6 @@ async function main() {
     let lightShader = new Shader(gl, "light.vs", "light.fs");
     await lightShader.initialize();
 
-    let lightCubeShader = new Shader(gl, "cube.vs", "cube.fs"); // light source
-    await lightCubeShader.initialize();
-
     let cameraPos = glMatrix.vec3.fromValues(0, 0, 3);
     let camera = new Camera(cameraPos);
   
@@ -21,7 +18,8 @@ async function main() {
     let lastFrame = 0.0;
     let isFirstMouse = true;
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
-    let lightPos = glMatrix.vec3.fromValues(0.0, 0.0, 1.0);
+    let lightPos = glMatrix.vec3.fromValues(0.0, 0.0, 2.0);
+    let direction = glMatrix.vec3.fromValues(0, 0, -1);
 
     addGUI(lightShader);
 
@@ -168,11 +166,12 @@ async function main() {
 
         lightShader.use();
         lightShader.setVec3("light.position", lightPos);
+        lightShader.setVec3("light.direction", direction);
+
         lightShader.setVec3("viewPos", camera.position);
 
-        // lightShader.setFloat("light.constant", 1);
-        // lightShader.setFloat("light.linear", 0.09);
-        // lightShader.setFloat("light.quadratic", 0.032);
+        lightShader.setFloat("light.cutOff", Math.cos(glMatrix.glMatrix.toRadian(12.5)));
+        lightShader.setFloat("light.outerCutOff", Math.cos(glMatrix.glMatrix.toRadian(17.5)));
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
@@ -194,14 +193,6 @@ async function main() {
             lightShader.setMat4("model", model);
             gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
-
-        lightCubeShader.use();
-        lightCubeShader.setMat4("projection", projection);
-        lightCubeShader.setMat4("view", view);
-        model = glMatrix.mat4.identity(model);
-        glMatrix.mat4.translate(model, model, lightPos);
-        glMatrix.mat4.scale(model, model, glMatrix.mat4.fromValues(0.2, 0.2, 0.2));
-        lightCubeShader.setMat4("model", model);
 
         gl.bindVertexArray(lightCubeVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
@@ -286,6 +277,11 @@ async function main() {
         lightPosFolder.add(lightPos,0,-10,10,0.1);
         lightPosFolder.add(lightPos,1,-10,10,0.1);
         lightPosFolder.add(lightPos,2,-10,10,0.1);
+
+        let lightDirFolder = lightGUI.addFolder("direction");
+        lightDirFolder.add(direction,0,-10,10,0.1);
+        lightDirFolder.add(direction,1,-10,10,0.1);
+        lightDirFolder.add(direction,2,-10,10,0.1);
     }
 }
 

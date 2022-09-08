@@ -10,4 +10,3 @@ https://learnopengl.com/ [webgl2 version]
 | 2_lighting | lighting |  [lighting](https://krapnikkk.github.io/learn_webgl2/2_lighting/)       |
 
 preview:http://106.55.102.172:1234/
-watch:nohup anywhere -p 1234 -s

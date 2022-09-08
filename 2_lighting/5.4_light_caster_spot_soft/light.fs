@@ -13,10 +13,14 @@ struct Material {
 
 struct Light {
     vec3 position;
+    vec3 direction;
 
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+
+    float cutOff;
+    float outerCutOff;
 
     float constant;
     float linear;
@@ -44,15 +48,24 @@ void main() {
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     vec3 specular = spec * light.specular * texture(material.specular, TexCoords).rgb;
 
+    // spotlight (soft edges)
+    float theta = dot(lightDir, normalize(-light.direction));
+    float epsilon = light.cutOff - light.outerCutOff;
+    // intensity
+    // 在聚光外是负的，在内圆锥内大于1.0的，在边缘处于两者之间的强度值
+    float intensity = clamp((theta - light.outerCutOff)/epsilon,0.0,1.0);
+    // 将不对环境光做出影响，让它总是能有一点光
+    diffuse *= intensity;
+    specular *= intensity;
+
     // attenuation
     float distance = length(light.position - FragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-    // ambient *= attenuation;
+    ambient *= attenuation;
     diffuse *= attenuation;
     specular *= attenuation;
 
     vec3 result = ambient + diffuse + specular;
     FragColor = vec4(result, 1.0);
-
 }

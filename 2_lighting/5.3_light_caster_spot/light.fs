@@ -54,7 +54,8 @@ void main() {
         float distance = length(light.position - FragPos);
         float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-        ambient *= attenuation;
+        // 从环境中去除衰减，否则在覆盖较小的距离，聚光灯内部比外部会更暗
+        // ambient *= attenuation;
         diffuse *= attenuation;
         specular *= attenuation;
 
@@ -62,6 +63,7 @@ void main() {
         FragColor = vec4(result, 1.0);
     }else{
         FragColor = vec4(light.ambient * texture(material.diffuse, TexCoords).rgb, 1.0);
+        // FragColor = vec4(0,0,0, 1.0);
     }
 
 }
