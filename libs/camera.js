@@ -1,5 +1,3 @@
-let isFirstMouse = true;
-let lastX, lastY;
 const YAW = -90.0;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
 const PITCH = 0.0;
 const ZOOM = 45.0;

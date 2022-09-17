@@ -95,7 +95,7 @@ async function main() {
         gl.uniformMatrix4fv(viewLoc, false, view);
         gl.uniformMatrix4fv(projectionLoc, false, projection);
 
-        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, 0);
+        gl.drawElements(gl.TRIANGLES, indices.byteLength, gl.UNSIGNED_BYTE, 0);
 
         requestAnimationFrame(render);
     }
