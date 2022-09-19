@@ -99,14 +99,14 @@ class Model {
         let diffuseMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_DIFFUSE, "texture_diffuse");
         textures = textures.concat(diffuseMaps);
         // 2. specular maps
-        // let specularMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_SPECULAR, "texture_specular");
-        // textures = textures.concat(specularMaps);
+        let specularMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_SPECULAR, "texture_specular");
+        textures = textures.concat(specularMaps);
         // 3. normal maps
-        // let normalMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_HEIGHT, "texture_normal");
-        // textures = textures.concat(normalMaps);
+        let normalMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_HEIGHT, "texture_normal");
+        textures = textures.concat(normalMaps);
         // 4. height maps
-        // let heightMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_AMBIENT, "texture_ambient");
-        // textures = textures.concat(heightMaps);
+        let heightMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_AMBIENT, "texture_ambient");
+        textures = textures.concat(heightMaps);
 
         // return a mesh object created from the extracted mesh data
         return new Mesh(this.gl, vertices, indices, textures);
@@ -169,22 +169,20 @@ class Model {
         let filename = directory + '/' + path;
         let textureID = this.gl.createTexture();
 
-        let data = await this.loadImage(filename);
-        let { width, height } = data,
-            nrComponents = 4;
+        let image = await IJS.Image.load(filename);
+        let { width, height,data,channels } = image;
         if (data) {
             let format;
-            if (nrComponents == 1)
+            if (channels == 1)
                 format = this.gl.RED;
-            else if (nrComponents == 3)
+            else if (channels == 3)
                 format = this.gl.RGB;
-            else if (nrComponents == 4)
+            else if (channels == 4)
                 format = this.gl.RGBA;
 
-            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+            // this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
             this.gl.bindTexture(this.gl.TEXTURE_2D, textureID);
-            // this.gl.texImage2D(this.gl.TEXTURE_2D, 0, format, width, height, 0, format, this.gl.UNSIGNED_BYTE, data);
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, format, format, this.gl.UNSIGNED_BYTE, data);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, format, width, height, 0, format, this.gl.UNSIGNED_BYTE, data);
             this.gl.generateMipmap(this.gl.TEXTURE_2D);
 
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
@@ -200,18 +198,4 @@ class Model {
         return textureID;
     }
 
-    async loadImage(url) {
-        return new Promise((resolve, reject) => {
-            let image = new Image();
-            image.src = url;
-            image.onload = () => {
-                resolve(image);
-            }
-            image.onerror = (err) => {
-                reject(err);
-                throw new Error(err);
-            }
-
-        })
-    }
 }

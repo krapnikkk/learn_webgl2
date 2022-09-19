@@ -14,7 +14,6 @@ class Mesh {
         this.vertices = new Float32Array(vertices);
         this.indices = indices.length > 256 ? new Uint16Array(indices) : new Uint8Array(indices);
         this.textures = textures;
-
         this.setupMesh();
     }
 
@@ -61,7 +60,7 @@ class Mesh {
         let diffuseNr = 1;
         let specularNr = 1;
         let normalNr = 1;
-        let heightNr = 1;
+        let ambientNr = 1;
 
         for (let i = 0; i < this.textures.length; i++) {
             this.gl.activeTexture(this.gl.TEXTURE0 + i); // active proper texture unit before binding
@@ -74,8 +73,8 @@ class Mesh {
                 number = specularNr++;// transfer unsigned int to string
             else if (name == "texture_normal")
                 number = normalNr++;// transfer unsigned int to string
-            else if (name == "texture_height")
-                number = heightNr++;// transfer unsigned int to string
+            else if (name == "texture_ambient")
+                number = ambientNr++;// transfer unsigned int to string
 
             // now set the sampler to the correct texture unit
             this.gl.uniform1i(this.gl.getUniformLocation(shader.ID, `${name}${number}`), i);
