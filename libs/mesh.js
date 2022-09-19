@@ -41,10 +41,10 @@ class Mesh {
         this.gl.enableVertexAttribArray(2);
         // vertex tangent
         this.gl.enableVertexAttribArray(3);
-        this.gl.vertexAttribPointer(3, Vertex.Tangent, this.gl.FLOAT, this.gl.FALSE, 14* this.vertices.BYTES_PER_ELEMENT, 8 * this.vertices.BYTES_PER_ELEMENT);
+        this.gl.vertexAttribPointer(3, Vertex.Tangent, this.gl.FLOAT, this.gl.FALSE, 14 * this.vertices.BYTES_PER_ELEMENT, 8 * this.vertices.BYTES_PER_ELEMENT);
         // vertex bitangent
         this.gl.enableVertexAttribArray(4);
-        this.gl.vertexAttribPointer(4, Vertex.Bitangent, this.gl.FLOAT, this.gl.FALSE, 14* this.vertices.BYTES_PER_ELEMENT, 11 * this.vertices.BYTES_PER_ELEMENT);
+        this.gl.vertexAttribPointer(4, Vertex.Bitangent, this.gl.FLOAT, this.gl.FALSE, 14 * this.vertices.BYTES_PER_ELEMENT, 11 * this.vertices.BYTES_PER_ELEMENT);
         // ids
         // this.gl.enableVertexAttribArray(5);
         // this.gl.vertexAttribIPointer(5, Vertex.m_BoneIDs, this.gl.UNSIGNED_BYTE, 22* this.vertices.BYTES_PER_ELEMENT, 14 * this.vertices.BYTES_PER_ELEMENT);
@@ -75,7 +75,11 @@ class Mesh {
                 number = normalNr++;// transfer unsigned int to string
             else if (name == "texture_ambient")
                 number = ambientNr++;// transfer unsigned int to string
+            else
+                continue
 
+
+            // console.log(`${name}${number}`)
             // now set the sampler to the correct texture unit
             this.gl.uniform1i(this.gl.getUniformLocation(shader.ID, `${name}${number}`), i);
             // and finally bind the texture

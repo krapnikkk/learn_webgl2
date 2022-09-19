@@ -117,6 +117,7 @@ class Model {
         let cnt = this.getTextureCount(mat, type);
         for (let i = 0; i < cnt; i++) {
             let str = this.getTexture(mat, type, i);
+            // console.log(str);
             //     // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
             let skip = false;
             for (let j = 0; j < this.textures_loaded.length; j++) {
@@ -135,6 +136,7 @@ class Model {
                 this.textures_loaded.push(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
             }
         }
+        // console.log(textures)
         return textures;
     }
 
