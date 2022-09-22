@@ -109,8 +109,29 @@ class Model {
         let heightMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_AMBIENT, "texture_ambient");
         textures = textures.concat(heightMaps);
 
+        textures = textures.concat(this.setupMaterial())
+
         // return a mesh object created from the extracted mesh data
         return new Mesh(this.gl, vertices, indices, textures);
+    }
+
+    async setupMaterial(){
+        let textures = [];
+        let materials = Object.keys(this.material);
+        for(let i = 0;i<materials.length;i++){
+            let material =materials[i];
+            if(material == "specularMap"){
+                let normalMaps = await this.loadMaterialTexture(this.material[material], "texture_specular");
+                textures.push(normalMaps);
+            }else if(material == "ambientMap"){
+                let normalMaps = await this.loadMaterialTexture(this.material[material], "texture_ambient");
+                textures.push(normalMaps);
+            }else if(material == "specular"){
+                let value = glMatrix.vec3.fromValues(...this.material[material]);
+                this.program.setVec3("material.specular",value)
+            }
+        }
+        return textures;
     }
 
     async loadMaterialTextures(mat, type, typeName) {
@@ -118,27 +139,30 @@ class Model {
         let cnt = this.getTextureCount(mat, type);
         for (let i = 0; i < cnt; i++) {
             let str = this.getTexture(mat, type, i);
-            // console.log(str);
-            //     // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
-            let skip = false;
-            for (let j = 0; j < this.textures_loaded.length; j++) {
-                if (this.textures_loaded[j].path == str) {
-                    textures.push(this.textures_loaded[j]);
-                    skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
-                    break;
-                }
-            }
-            if (!skip) {   // if texture hasn't been loaded already, load it
-                let texture = {};
-                texture.id = await this.textureFromFile(str, this.directory);
-                texture.type = typeName;
-                texture.path = str;
-                textures.push(texture);
-                this.textures_loaded.push(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
+            let texture = await loadMaterialTexture(str,typeName);
+            textures.push(texture);
+        }
+        return textures;
+    }
+
+    async loadMaterialTexture(url,typeName){
+        let texture = {};
+        //     // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
+        let skip = false;
+        for (let j = 0; j < this.textures_loaded.length; j++) {
+            if (this.textures_loaded[j].path == url) {
+                texture = this.textures_loaded[j];
+                skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
+                break;
             }
         }
-        // console.log(textures)
-        return textures;
+        if (!skip) {   // if texture hasn't been loaded already, load it
+            texture.id = await this.textureFromFile(url, this.directory);
+            texture.type = typeName;
+            texture.path = url;
+            this.textures_loaded.push(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
+        }
+        return texture;
     }
 
     getTextureCount(mats, type) {

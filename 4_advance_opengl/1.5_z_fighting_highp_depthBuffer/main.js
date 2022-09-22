@@ -1,6 +1,6 @@
 let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
 let camera = new Camera(cameraPos);
-
+let distance = { y: 0.00000000000001 };
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
 
@@ -19,10 +19,12 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    // gl.depthFunc(gl.ALWAYS);
+
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
+
+    addGUI()
 
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
@@ -107,13 +109,16 @@ async function main() {
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
+    let depthBuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT32F, SCR_WIDTH,SCR_HEIGHT);
+
     let cubeTexture = await loadTexture(gl, "../../resources/textures/marble.jpg");
     let floorTexture = await loadTexture(gl, "../../resources/textures/metal.png");
 
     shader.use();
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
     // shader.setInt("texture2", 1);
-
 
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
@@ -136,14 +141,17 @@ async function main() {
         gl.bindVertexArray(cubeVAO);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, 0.0, -1.0));
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, distance.y, -1.0));
         shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
+
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, distance.y, 0.0));
         shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+
         // floor
         gl.bindVertexArray(planeVAO);
         gl.bindTexture(gl.TEXTURE_2D, floorTexture);
@@ -197,6 +205,12 @@ async function main() {
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
     }
+
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "distance" });
+        let distanceFloder = GUI.addFolder("distance");
+        distanceFloder.add(distance, "y", -0.01, 0.01, 0.0001)
+    }
 }
 
 async function loadTexture(gl, url) {
@@ -215,8 +229,8 @@ async function loadTexture(gl, url) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
             gl.generateMipmap(gl.TEXTURE_2D);
-    
-    
+
+
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

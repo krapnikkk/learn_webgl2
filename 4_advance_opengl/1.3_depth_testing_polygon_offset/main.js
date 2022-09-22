@@ -1,6 +1,6 @@
 let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
 let camera = new Camera(cameraPos);
-
+let polygonOffset = { factor: 1, units: 0 };
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
 
@@ -18,11 +18,10 @@ async function main() {
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    gl.enable(gl.DEPTH_TEST);
-    // gl.depthFunc(gl.ALWAYS);
-
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
+
+    addGUI()
 
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
@@ -114,7 +113,6 @@ async function main() {
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
     // shader.setInt("texture2", 1);
 
-
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
@@ -140,10 +138,21 @@ async function main() {
         shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
+        // 多边形偏移
+        gl.enable(gl.POLYGON_OFFSET_FILL);
+        gl.enable(gl.DEPTH_TEST);
+        gl.polygonOffset(polygonOffset.factor, polygonOffset.units);
+
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
         shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+        // // 多边形偏移
+        gl.enable(gl.POLYGON_OFFSET_FILL);
+        gl.enable(gl.DEPTH_TEST);
+        gl.polygonOffset(polygonOffset.factor, polygonOffset.units);
+
         // floor
         gl.bindVertexArray(planeVAO);
         gl.bindTexture(gl.TEXTURE_2D, floorTexture);
@@ -197,6 +206,13 @@ async function main() {
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
     }
+
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "polygon_offset" });
+        let polygonOffsetFloder = GUI.addFolder("polygon_offset");
+        polygonOffsetFloder.add(polygonOffset, "factor", -10, 10, 1)
+        polygonOffsetFloder.add(polygonOffset, "units", -10, 10, 1)
+    }
 }
 
 async function loadTexture(gl, url) {
@@ -215,8 +231,8 @@ async function loadTexture(gl, url) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
             gl.generateMipmap(gl.TEXTURE_2D);
-    
-    
+
+
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

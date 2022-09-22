@@ -51,7 +51,7 @@ async function main() {
     addGUI(modelShader);
 
     let obj = new Model(gl, '../../resources/objects/nanosuit');
-    await obj.loadModel(['../../resources/objects/nanosuit/nanosuit.mtl', '../../resources/objects/nanosuit/nanosuit.obj'])
+    await obj.loadModel(['nanosuit.mtl', 'nanosuit.obj'])
 
 
     function render(time) {

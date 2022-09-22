@@ -9,7 +9,10 @@ let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
-// mat
+let depthMap = {
+    near: 0.1,
+    far: 100
+}
 
 async function main() {
     let stats = new Stats();
@@ -19,10 +22,11 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    // gl.depthFunc(gl.ALWAYS);
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
+
+    addGUI(shader);
 
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
@@ -131,6 +135,8 @@ async function main() {
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
+        shader.setFloat("far",depthMap.far)
+        shader.setFloat("near",depthMap.near)
 
         // cubes
         gl.bindVertexArray(cubeVAO);
@@ -197,6 +203,13 @@ async function main() {
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
     }
+
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "depth" });
+        let depthFolder = GUI.addFolder("depth");
+        depthFolder.add(depthMap, "near", 0.1, 1, 0.1)
+        depthFolder.add(depthMap, "far", 10, 500, 10)
+    }
 }
 
 async function loadTexture(gl, url) {
@@ -215,8 +228,8 @@ async function loadTexture(gl, url) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
             gl.generateMipmap(gl.TEXTURE_2D);
-    
-    
+
+
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
