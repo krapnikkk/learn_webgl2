@@ -152,10 +152,10 @@ async function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 5 * vertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * vertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
 
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, gl.FALSE, 5 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoordLoc);
 
     let texture1 = gl.createTexture();

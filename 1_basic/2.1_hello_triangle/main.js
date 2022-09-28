@@ -69,7 +69,7 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    gl.vertexAttribPointer(layoutPosIdx, 3, gl.FLOAT, gl.FALSE, 3 * vertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(layoutPosIdx, 3, gl.FLOAT, false, 3 * vertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(layoutPosIdx);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, null);

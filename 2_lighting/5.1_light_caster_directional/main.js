@@ -130,11 +130,11 @@ async function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 8 * vertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 8 * vertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, gl.FALSE, 8 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 8 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(normalLoc);
-    gl.vertexAttribPointer(texCoords, 2, gl.FLOAT, gl.FALSE, 8 * vertices.BYTES_PER_ELEMENT, 6 * vertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(texCoords, 2, gl.FLOAT, false, 8 * vertices.BYTES_PER_ELEMENT, 6 * vertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoords);
 
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");

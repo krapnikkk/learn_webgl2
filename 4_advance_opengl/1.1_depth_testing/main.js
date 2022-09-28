@@ -19,7 +19,7 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    // gl.depthFunc(gl.ALWAYS);
+    addGUI();
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
@@ -89,9 +89,9 @@ async function main() {
     gl.bindVertexArray(cubeVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
     gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 5 * cubeVertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * cubeVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, gl.FALSE, 5 * cubeVertices.BYTES_PER_ELEMENT, 3 * cubeVertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * cubeVertices.BYTES_PER_ELEMENT, 3 * cubeVertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
@@ -101,9 +101,9 @@ async function main() {
     gl.bindVertexArray(planeVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, planeVBO);
     gl.bufferData(gl.ARRAY_BUFFER, planeVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 5 * planeVertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * planeVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, gl.FALSE, 5 * planeVertices.BYTES_PER_ELEMENT, 3 * planeVertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * planeVertices.BYTES_PER_ELEMENT, 3 * planeVertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
@@ -112,7 +112,6 @@ async function main() {
 
     shader.use();
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
-    // shader.setInt("texture2", 1);
 
 
     function render(time) {
@@ -196,6 +195,46 @@ async function main() {
 
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
+    }
+
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "depth" });
+        var depth = {
+            switch: true,
+            depthFunc:gl.LESS
+        };
+        // let depthFunc = {
+        //     "GL_ALWAYS": gl.ALWAYS,
+        //     "GL_NEVER": gl.NEVER,
+        //     "GL_LESS": gl.LESS,
+        //     "GL_EQUAL": gl.EQUAL,
+        //     "GL_LEQUAL": gl.LEQUAL,
+        //     "GL_GREATER": gl.GREATER,
+        //     "GL_NOTEQUAL": gl.NOTEQUAL,
+        //     "GL_GEQUAL": gl.GEQUAL,
+        // }
+
+        
+        let toggle = GUI.add(depth, "switch").name("enable depth").onChange((val)=>{
+            if(val){
+                gl.enable(gl.DEPTH_TEST);
+            }else{
+                gl.disable(gl.DEPTH_TEST)
+            }
+        });
+        GUI.add(depth, "depthFunc", {
+            "GL_ALWAYS": gl.ALWAYS,
+            "GL_NEVER": gl.NEVER,
+            "GL_LESS": gl.LESS,
+            "GL_EQUAL": gl.EQUAL,
+            "GL_LEQUAL": gl.LEQUAL,
+            "GL_GREATER": gl.GREATER,
+            "GL_NOTEQUAL": gl.NOTEQUAL,
+            "GL_GEQUAL": gl.GEQUAL,
+        }).onChange((key)=>{
+            toggle.setValue(true);
+            gl.depthFunc(key);
+        })
     }
 }
 

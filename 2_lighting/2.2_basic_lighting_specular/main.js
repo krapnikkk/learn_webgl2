@@ -117,9 +117,9 @@ async function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 6 * vertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 6 * vertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, gl.FALSE, 6 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 6 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(normalLoc);
 
 
@@ -128,7 +128,7 @@ async function main() {
     // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
 
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 6 * vertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 6 * vertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
 
 

@@ -91,9 +91,9 @@ async function main() {
     gl.bindVertexArray(cubeVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
     gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 5 * cubeVertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * cubeVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, gl.FALSE, 5 * cubeVertices.BYTES_PER_ELEMENT, 3 * cubeVertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * cubeVertices.BYTES_PER_ELEMENT, 3 * cubeVertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
@@ -103,9 +103,9 @@ async function main() {
     gl.bindVertexArray(planeVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, planeVBO);
     gl.bufferData(gl.ARRAY_BUFFER, planeVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, gl.FALSE, 5 * planeVertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * planeVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, gl.FALSE, 5 * planeVertices.BYTES_PER_ELEMENT, 3 * planeVertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * planeVertices.BYTES_PER_ELEMENT, 3 * planeVertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 

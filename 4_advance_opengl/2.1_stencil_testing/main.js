@@ -1,6 +1,6 @@
 let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
 let camera = new Camera(cameraPos);
-let distance = { y: 0 };
+
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
 
@@ -15,16 +15,21 @@ async function main() {
     let stats = new Stats();
     document.body.appendChild(stats.dom);
 
-    const gl = document.getElementById("canvas").getContext("webgl2");
+    const gl = document.getElementById("canvas").getContext("webgl2",{stencil:true});
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-
+    gl.depthFunc(gl.LESS);
+    // stencil
+    gl.enable(gl.STENCIL_TEST);
+    gl.stencilFunc(gl.EQUAL,1,0xFF);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
 
-    addGUI()
+    let colorShader = new Shader(gl, "shader.vs", "color.fs");
+    await colorShader.initialize();
 
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
@@ -114,7 +119,7 @@ async function main() {
 
     shader.use();
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
-    // shader.setInt("texture2", 1);
+
 
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
@@ -122,31 +127,22 @@ async function main() {
         lastFrame = currentFrame;
 
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
-        shader.use();
+        colorShader.use();
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
+        colorShader.setMat4("view", view);
+        colorShader.setMat4("projection", projection);
+
+        shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
 
-        // cubes
-        gl.bindVertexArray(cubeVAO);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, distance.y, -1.0));
-        shader.setMat4("model", model);
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
-
-
-        model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, distance.y, 0.0));
-        shader.setMat4("model", model);
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
-
+        gl.stencilMask(0x00);// 每一位在写入模板缓冲时都会变成0（禁用写入）
 
         // floor
         gl.bindVertexArray(planeVAO);
@@ -154,6 +150,50 @@ async function main() {
         shader.setMat4("model", glMatrix.mat4.identity(glMatrix.mat4.create()));
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindVertexArray(null);
+
+        //绘制物体之前，将模板函数设置为gl.ALWAYS
+        gl.stencilFunc(gl.ALWAYS, 1, 0xFF); // 所有片段都应该更新模板缓冲
+        gl.stencilMask(0xFF); // 每一位写入模板缓冲时都保持原样
+
+        // cubes
+        gl.bindVertexArray(cubeVAO);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, 0.0, -1.0));
+        shader.setMat4("model", model);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
+        shader.setMat4("model", model);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        
+        gl.stencilFunc(gl.NOTEQUAL, 1, 0xFF); // 保证只绘制箱子之外的部分
+        gl.stencilMask(0x00);// 每一位在写入模板缓冲时都会变成0（禁用写入）
+        gl.disable(gl.DEPTH_TEST); // 关闭深度测试，让边框被绘制
+        colorShader.use();
+        let scale = 1.1;
+
+        // outline
+        gl.bindVertexArray(cubeVAO);
+        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, 0.0, -1.0));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(scale, scale, scale));
+        colorShader.setMat4("model", model);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(scale, scale, scale));
+        colorShader.setMat4("model", model);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        gl.bindVertexArray(null);
+
+        gl.stencilMask(0xFF);// 每一位写入模板缓冲时都保持原样
+        gl.stencilFunc(gl.ALWAYS, 0, 0xFF);
+        gl.enable(gl.DEPTH_TEST);
 
         stats.update();
         requestAnimationFrame(render);
@@ -201,12 +241,6 @@ async function main() {
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
     }
-
-    function addGUI() {
-        const GUI = new dat.GUI({ name: "distance" });
-        let distanceFloder = GUI.addFolder("distance");
-        distanceFloder.add(distance, "y", -0.0001, 0.0001, 0.00001)
-    }
 }
 
 async function loadTexture(gl, url) {
@@ -225,8 +259,8 @@ async function loadTexture(gl, url) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
             gl.generateMipmap(gl.TEXTURE_2D);
-
-
+    
+    
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

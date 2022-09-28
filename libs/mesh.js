@@ -30,28 +30,28 @@ class Mesh {
         this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, this.indices, this.gl.STATIC_DRAW);
 
         // vertex Positions
-        this.gl.vertexAttribPointer(0, Vertex.Position, this.gl.FLOAT, this.gl.FALSE, 14 * this.vertices.BYTES_PER_ELEMENT, 0);
+        this.gl.vertexAttribPointer(0, Vertex.Position, this.gl.FLOAT, this.false, 14 * this.vertices.BYTES_PER_ELEMENT, 0);
         this.gl.enableVertexAttribArray(0);
 
         // vertex normals
-        this.gl.vertexAttribPointer(1, Vertex.Normal, this.gl.FLOAT, this.gl.FALSE, 14 * this.vertices.BYTES_PER_ELEMENT, 3 * this.vertices.BYTES_PER_ELEMENT);
+        this.gl.vertexAttribPointer(1, Vertex.Normal, this.gl.FLOAT, this.false, 14 * this.vertices.BYTES_PER_ELEMENT, 3 * this.vertices.BYTES_PER_ELEMENT);
         this.gl.enableVertexAttribArray(1);
         // vertex texture coords
-        this.gl.vertexAttribPointer(2, Vertex.TexCoords, this.gl.FLOAT, this.gl.FALSE, 14 * this.vertices.BYTES_PER_ELEMENT, 6 * this.vertices.BYTES_PER_ELEMENT);
+        this.gl.vertexAttribPointer(2, Vertex.TexCoords, this.gl.FLOAT, this.false, 14 * this.vertices.BYTES_PER_ELEMENT, 6 * this.vertices.BYTES_PER_ELEMENT);
         this.gl.enableVertexAttribArray(2);
         // vertex tangent
         this.gl.enableVertexAttribArray(3);
-        this.gl.vertexAttribPointer(3, Vertex.Tangent, this.gl.FLOAT, this.gl.FALSE, 14 * this.vertices.BYTES_PER_ELEMENT, 8 * this.vertices.BYTES_PER_ELEMENT);
+        this.gl.vertexAttribPointer(3, Vertex.Tangent, this.gl.FLOAT, this.false, 14 * this.vertices.BYTES_PER_ELEMENT, 8 * this.vertices.BYTES_PER_ELEMENT);
         // vertex bitangent
         this.gl.enableVertexAttribArray(4);
-        this.gl.vertexAttribPointer(4, Vertex.Bitangent, this.gl.FLOAT, this.gl.FALSE, 14 * this.vertices.BYTES_PER_ELEMENT, 11 * this.vertices.BYTES_PER_ELEMENT);
+        this.gl.vertexAttribPointer(4, Vertex.Bitangent, this.gl.FLOAT, this.false, 14 * this.vertices.BYTES_PER_ELEMENT, 11 * this.vertices.BYTES_PER_ELEMENT);
         // ids
         // this.gl.enableVertexAttribArray(5);
         // this.gl.vertexAttribIPointer(5, Vertex.m_BoneIDs, this.gl.UNSIGNED_BYTE, 22* this.vertices.BYTES_PER_ELEMENT, 14 * this.vertices.BYTES_PER_ELEMENT);
 
         // weights
         // this.gl.enableVertexAttribArray(6);
-        // this.gl.vertexAttribPointer(6, Vertex.m_Weights, this.gl.FLOAT, this.gl.FALSE, 22* this.vertices.BYTES_PER_ELEMENT, 18 * this.vertices.BYTES_PER_ELEMENT);
+        // this.gl.vertexAttribPointer(6, Vertex.m_Weights, this.gl.FLOAT, this.false, 22* this.vertices.BYTES_PER_ELEMENT, 18 * this.vertices.BYTES_PER_ELEMENT);
         this.gl.bindVertexArray(null);
     }
 
