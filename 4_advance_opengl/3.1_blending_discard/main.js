@@ -9,10 +9,7 @@ let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
-let depthMap = {
-    near: 0.1,
-    far: 100
-}
+// mat
 
 async function main() {
     let stats = new Stats();
@@ -22,11 +19,10 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
+    addGUI();
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
-
-    addGUI(shader);
 
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
@@ -84,6 +80,25 @@ async function main() {
         5.0, -0.5, -5.0, 2.0, 2.0
     ])
 
+    
+    let vegetationVertices = new Float32Array([
+        // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+        0.0,  0.5,  0.0,  0.0,  0.0,
+        0.0, -0.5,  0.0,  0.0,  1.0,
+        1.0, -0.5,  0.0,  1.0,  1.0,
+
+        0.0,  0.5,  0.0,  0.0,  0.0,
+        1.0, -0.5,  0.0,  1.0,  1.0,
+        1.0,  0.5,  0.0,  1.0,  0.0
+    ]);
+
+    let vegetation = [
+        [-1.5, 0.0, -0.48],
+         [1.5, 0.0, 0.51],
+         [0.0, 0.0, 0.7],
+        [-0.3, 0.0, -2.3],
+        [0.5, 0.0, -0.6]
+    ]
 
     let positionLoc = 0, texCoordLoc = 1;
 
@@ -111,12 +126,24 @@ async function main() {
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
+    let vegetationVAO = gl.createVertexArray();
+    let vegetationVBO = gl.createBuffer();
+
+    gl.bindVertexArray(vegetationVAO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vegetationVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, vegetationVertices, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * vegetationVertices.BYTES_PER_ELEMENT, 0);
+    gl.enableVertexAttribArray(positionLoc);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * vegetationVertices.BYTES_PER_ELEMENT, 3 * vegetationVertices.BYTES_PER_ELEMENT);
+    gl.enableVertexAttribArray(texCoordLoc);
+    gl.bindVertexArray(null);
+
     let cubeTexture = await loadTexture(gl, "../../resources/textures/marble.jpg");
     let floorTexture = await loadTexture(gl, "../../resources/textures/metal.png");
+    let vegetationTexture = await loadTexture(gl,"../../resources/textures/grass.png");
 
     shader.use();
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
-    // shader.setInt("texture2", 1);
 
 
     function render(time) {
@@ -135,8 +162,6 @@ async function main() {
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
-        shader.setFloat("far",depthMap.far)
-        shader.setFloat("near",depthMap.near)
 
         // cubes
         gl.bindVertexArray(cubeVAO);
@@ -155,6 +180,18 @@ async function main() {
         gl.bindTexture(gl.TEXTURE_2D, floorTexture);
         shader.setMat4("model", glMatrix.mat4.identity(glMatrix.mat4.create()));
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.bindVertexArray(null);
+
+        // vegetation
+        gl.bindVertexArray(vegetationVAO);
+        gl.bindTexture(gl.TEXTURE_2D, vegetationTexture);
+        for (let i = 0; i < vegetation.length; i++)
+        {
+            model = glMatrix.mat4.identity(glMatrix.mat4.create());
+            model = glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(...vegetation[i]));
+            shader.setMat4("model", model);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
         gl.bindVertexArray(null);
 
         stats.update();
@@ -206,9 +243,31 @@ async function main() {
 
     function addGUI() {
         const GUI = new dat.GUI({ name: "depth" });
-        let depthFolder = GUI.addFolder("depth");
-        depthFolder.add(depthMap, "near", 0.1, 1, 0.1)
-        depthFolder.add(depthMap, "far", 10, 500, 10)
+        var depth = {
+            switch: true,
+            depthFunc:gl.LESS
+        };
+
+        let toggle = GUI.add(depth, "switch").name("enable depth").onChange((val)=>{
+            if(val){
+                gl.enable(gl.DEPTH_TEST);
+            }else{
+                gl.disable(gl.DEPTH_TEST)
+            }
+        });
+        GUI.add(depth, "depthFunc", {
+            "GL_ALWAYS": gl.ALWAYS,
+            "GL_NEVER": gl.NEVER,
+            "GL_LESS": gl.LESS,
+            "GL_EQUAL": gl.EQUAL,
+            "GL_LEQUAL": gl.LEQUAL,
+            "GL_GREATER": gl.GREATER,
+            "GL_NOTEQUAL": gl.NOTEQUAL,
+            "GL_GEQUAL": gl.GEQUAL,
+        }).onChange((key)=>{
+            toggle.setValue(true);
+            gl.depthFunc(key);
+        })
     }
 }
 
@@ -228,8 +287,8 @@ async function loadTexture(gl, url) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
             gl.generateMipmap(gl.TEXTURE_2D);
-
-
+    
+    
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

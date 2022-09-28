@@ -1,6 +1,6 @@
 let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
 let camera = new Camera(cameraPos);
-
+let polygonOffset = { factor: 1, units: 0 };
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
 
@@ -9,10 +9,7 @@ let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
-let depthMap = {
-    near: 0.1,
-    far: 100
-}
+// mat
 
 async function main() {
     let stats = new Stats();
@@ -21,12 +18,10 @@ async function main() {
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    gl.enable(gl.DEPTH_TEST);
-
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
 
-    addGUI(shader);
+    addGUI()
 
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
@@ -118,7 +113,6 @@ async function main() {
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
     // shader.setInt("texture2", 1);
 
-
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
@@ -135,8 +129,6 @@ async function main() {
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
-        shader.setFloat("far",depthMap.far)
-        shader.setFloat("near",depthMap.near)
 
         // cubes
         gl.bindVertexArray(cubeVAO);
@@ -146,10 +138,21 @@ async function main() {
         shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
+        // 多边形偏移
+        gl.enable(gl.POLYGON_OFFSET_FILL);
+        gl.enable(gl.DEPTH_TEST);
+        gl.polygonOffset(polygonOffset.factor, polygonOffset.units);
+
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
         shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+        // // 多边形偏移
+        gl.enable(gl.POLYGON_OFFSET_FILL);
+        gl.enable(gl.DEPTH_TEST);
+        gl.polygonOffset(polygonOffset.factor, polygonOffset.units);
+
         // floor
         gl.bindVertexArray(planeVAO);
         gl.bindTexture(gl.TEXTURE_2D, floorTexture);
@@ -205,10 +208,10 @@ async function main() {
     }
 
     function addGUI() {
-        const GUI = new dat.GUI({ name: "depth" });
-        let depthFolder = GUI.addFolder("depth");
-        depthFolder.add(depthMap, "near", 0.1, 1, 0.1)
-        depthFolder.add(depthMap, "far", 10, 500, 10)
+        const GUI = new dat.GUI({ name: "polygon_offset" });
+        let polygonOffsetFloder = GUI.addFolder("polygon_offset");
+        polygonOffsetFloder.add(polygonOffset, "factor", -10, 10, 1)
+        polygonOffsetFloder.add(polygonOffset, "units", -10, 10, 1)
     }
 }
 

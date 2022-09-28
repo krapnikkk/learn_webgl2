@@ -203,17 +203,6 @@ async function main() {
             switch: true,
             depthFunc:gl.LESS
         };
-        // let depthFunc = {
-        //     "GL_ALWAYS": gl.ALWAYS,
-        //     "GL_NEVER": gl.NEVER,
-        //     "GL_LESS": gl.LESS,
-        //     "GL_EQUAL": gl.EQUAL,
-        //     "GL_LEQUAL": gl.LEQUAL,
-        //     "GL_GREATER": gl.GREATER,
-        //     "GL_NOTEQUAL": gl.NOTEQUAL,
-        //     "GL_GEQUAL": gl.GEQUAL,
-        // }
-
         
         let toggle = GUI.add(depth, "switch").name("enable depth").onChange((val)=>{
             if(val){
