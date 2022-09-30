@@ -19,11 +19,10 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    addGUI();
+    
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
-
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
         -0.5, -0.5, -0.5, 0.0, 0.0,
@@ -80,7 +79,6 @@ async function main() {
         5.0, -0.5, -5.0, 2.0, 2.0
     ])
 
-    
     let vegetationVertices = new Float32Array([
         // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
         0.0,  0.5,  0.0,  0.0,  0.0,
@@ -143,6 +141,7 @@ async function main() {
     let vegetationTexture = await loadTexture(gl,"../../resources/textures/grass.png");
 
     shader.use();
+    addGUI(shader);
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
 
 
@@ -241,32 +240,14 @@ async function main() {
         camera.onMouseScroll(e.deltaY / 100);
     }
 
-    function addGUI() {
-        const GUI = new dat.GUI({ name: "depth" });
-        var depth = {
-            switch: true,
-            depthFunc:gl.LESS
+    function addGUI(shader) {
+        const GUI = new dat.GUI({ name: "blend" });
+        var blend = {
+            alpha: 0.25
         };
-
-        let toggle = GUI.add(depth, "switch").name("enable depth").onChange((val)=>{
-            if(val){
-                gl.enable(gl.DEPTH_TEST);
-            }else{
-                gl.disable(gl.DEPTH_TEST)
-            }
-        });
-        GUI.add(depth, "depthFunc", {
-            "GL_ALWAYS": gl.ALWAYS,
-            "GL_NEVER": gl.NEVER,
-            "GL_LESS": gl.LESS,
-            "GL_EQUAL": gl.EQUAL,
-            "GL_LEQUAL": gl.LEQUAL,
-            "GL_GREATER": gl.GREATER,
-            "GL_NOTEQUAL": gl.NOTEQUAL,
-            "GL_GEQUAL": gl.GEQUAL,
-        }).onChange((key)=>{
-            toggle.setValue(true);
-            gl.depthFunc(key);
+        shader.setFloat("alpha",blend.alpha)
+        GUI.add(blend,"alpha",0.01,0.5,0.01).onChange((val)=>{
+            shader.setFloat("alpha",val)
         })
     }
 }
