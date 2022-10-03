@@ -3,9 +3,9 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
-    gl.frontFace(gl.CW);
+    // gl.enable(gl.CULL_FACE);
+    // gl.cullFace(gl.BACK);
+    // gl.frontFace(gl.CW);
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
@@ -82,6 +82,8 @@ async function main() {
     let viewLoc = gl.getUniformLocation(shader.ID, "view");
     shader.use();
 
+    addGUI(gl);
+
     function render(time) {
         gl.clearColor(0.2, 0.3, 0.3, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
@@ -107,6 +109,40 @@ async function main() {
     }
 
     requestAnimationFrame(render);
+
+    function addGUI(gl) {
+        const GUI = new dat.GUI({ name: "cull" });
+        var cull = {
+            switch: true,
+            cullFace:gl.BACK,
+            frontFace:gl.CW
+
+        };
+        
+        let toggle = GUI.add(cull, "switch").name("enable CULL_FACE").onChange((val)=>{
+            if(val){
+                gl.enable(gl.CULL_FACE);
+            }else{
+                gl.disable(gl.CULL_FACE);
+            }
+        });
+        GUI.add(cull, "cullFace", {
+            "BACK[只剔除背向面]": gl.BACK,
+            "FRONT[只剔除正向面]": gl.FRONT,
+            "FRONT_AND_BACK[剔除正向面和背向面]": gl.FRONT_AND_BACK
+        }).onChange((key)=>{
+            toggle.setValue(true);
+            gl.cullFace(key);
+        })
+        GUI.add(cull, "frontFace", {
+            "CW[顺时针顺序]": gl.CW,
+            "CCW[逆时针顺序]": gl.CCW
+        }).onChange((key)=>{
+            toggle.setValue(true);
+            gl.frontFace(key);
+        })
+
+    }
 }
 
 async function loadTexture(gl, url) {
