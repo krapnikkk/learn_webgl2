@@ -18,8 +18,8 @@ async function main() {
     const gl = document.getElementById("canvas").getContext("webgl2",{stencil:true});
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LESS);
+    // gl.enable(gl.DEPTH_TEST);
+    // gl.depthFunc(gl.LESS);
     // stencil
     gl.enable(gl.STENCIL_TEST);
     gl.stencilFunc(gl.EQUAL,1,0xFF);
@@ -78,13 +78,13 @@ async function main() {
 
     let planeVertices = new Float32Array([
         // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-        5.0, -0.5, 5.0, 2.0, 0.0,
-        -5.0, -0.5, 5.0, 0.0, 0.0,
-        -5.0, -0.5, -5.0, 0.0, 2.0,
+        5.0, -0.1, 5.0, 2.0, 0.0,
+        -5.0, -0.1, 5.0, 0.0, 0.0,
+        -5.0, -0.1, -5.0, 0.0, 2.0,
 
-        5.0, -0.5, 5.0, 2.0, 0.0,
-        -5.0, -0.5, -5.0, 0.0, 2.0,
-        5.0, -0.5, -5.0, 2.0, 2.0
+        5.0, -0.1, 5.0, 2.0, 0.0,
+        -5.0, -0.1, -5.0, 0.0, 2.0,
+        5.0, -0.1, -5.0, 2.0, 2.0
     ])
 
 
@@ -171,7 +171,7 @@ async function main() {
         // 只有模板值不等于1的才能通过模板测试
         gl.stencilFunc(gl.NOTEQUAL, 1, 0xFF); // 保证只绘制箱子之外的部分,箱子的模板缓冲已经是1了
         gl.stencilMask(0x00);// 禁用写入，不更新模板缓冲，使用之前的数据进行对比
-        gl.disable(gl.DEPTH_TEST); // 关闭深度测试，让边框被绘制
+        // gl.disable(gl.DEPTH_TEST); // 关闭深度测试，让边框被绘制
         colorShader.use();
         let scale = 1.1;
 
