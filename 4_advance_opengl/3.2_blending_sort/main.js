@@ -15,22 +15,18 @@ async function main() {
     let stats = new Stats();
     document.body.appendChild(stats.dom);
 
-    const gl = document.getElementById("canvas").getContext("webgl2",{stencil:true});
+    const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LESS);
-    // stencil
-    gl.enable(gl.STENCIL_TEST);
-    gl.stencilFunc(gl.EQUAL,1,0xFF);
-    gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    addGUI();
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
-
-    let colorShader = new Shader(gl, "shader.vs", "color.fs");
-    await colorShader.initialize();
-
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
         -0.5, -0.5, -0.5, 0.0, 0.0,
@@ -78,15 +74,33 @@ async function main() {
 
     let planeVertices = new Float32Array([
         // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-        5.0, -0.1, 5.0, 2.0, 0.0,
-        -5.0, -0.1, 5.0, 0.0, 0.0,
-        -5.0, -0.1, -5.0, 0.0, 2.0,
+        5.0, -0.5, 5.0, 2.0, 0.0,
+        -5.0, -0.5, 5.0, 0.0, 0.0,
+        -5.0, -0.5, -5.0, 0.0, 2.0,
 
-        5.0, -0.1, 5.0, 2.0, 0.0,
-        -5.0, -0.1, -5.0, 0.0, 2.0,
-        5.0, -0.1, -5.0, 2.0, 2.0
+        5.0, -0.5, 5.0, 2.0, 0.0,
+        -5.0, -0.5, -5.0, 0.0, 2.0,
+        5.0, -0.5, -5.0, 2.0, 2.0
     ])
 
+    let transparentVertices = new Float32Array([
+        // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+        0.0, 0.5, 0.0, 0.0, 0.0,
+        0.0, -0.5, 0.0, 0.0, 1.0,
+        1.0, -0.5, 0.0, 1.0, 1.0,
+
+        0.0, 0.5, 0.0, 0.0, 0.0,
+        1.0, -0.5, 0.0, 1.0, 1.0,
+        1.0, 0.5, 0.0, 1.0, 0.0
+    ]);
+
+    let windows = [
+        [-1.5, 0.0, -0.48],
+        [1.5, 0.0, 0.51],
+        [0.0, 0.0, 0.7],
+        [-0.3, 0.0, -2.3],
+        [0.5, 0.0, -0.6]
+    ]
 
     let positionLoc = 0, texCoordLoc = 1;
 
@@ -114,12 +128,24 @@ async function main() {
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
+    let windowsVAO = gl.createVertexArray();
+    let windowsVBO = gl.createBuffer();
+
+    gl.bindVertexArray(windowsVAO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, windowsVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, transparentVertices, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * transparentVertices.BYTES_PER_ELEMENT, 0);
+    gl.enableVertexAttribArray(positionLoc);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * transparentVertices.BYTES_PER_ELEMENT, 3 * transparentVertices.BYTES_PER_ELEMENT);
+    gl.enableVertexAttribArray(texCoordLoc);
+    gl.bindVertexArray(null);
+
     let cubeTexture = await loadTexture(gl, "../../resources/textures/marble.jpg");
     let floorTexture = await loadTexture(gl, "../../resources/textures/metal.png");
+    let transparentTexture = await loadTexture(gl, "../../resources/textures/window.png");
 
     shader.use();
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
-
 
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
@@ -127,28 +153,16 @@ async function main() {
         lastFrame = currentFrame;
 
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        colorShader.use();
+        shader.use();
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-        colorShader.setMat4("view", view);
-        colorShader.setMat4("projection", projection);
-
-        shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
-
-        // gl.stencilMask(0x00);// 禁用写入，不更新模板缓冲
-
-        
-
-        //绘制物体之前，将模板函数设置为gl.ALWAYS
-        gl.stencilFunc(gl.ALWAYS, 1, 0xFF); // 所有片段都应该更新模板缓冲
-        gl.stencilMask(0xFF); // 每一位写入模板缓冲时都保持原样
 
         // cubes
         gl.bindVertexArray(cubeVAO);
@@ -162,46 +176,33 @@ async function main() {
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
         shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
-
         // floor
-        // gl.enable(gl.DEPTH_TEST);
         gl.bindVertexArray(planeVAO);
         gl.bindTexture(gl.TEXTURE_2D, floorTexture);
         shader.setMat4("model", glMatrix.mat4.identity(glMatrix.mat4.create()));
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindVertexArray(null);
 
-        // 上面已经绘制好cubes 存在像素的位置的模板值都是1，其它的是0
-        // 只有模板值不等于1的才能通过模板测试
-        gl.stencilFunc(gl.NOTEQUAL, 1, 0xFF); // 保证只绘制箱子之外的部分,箱子的模板缓冲已经是1了
-        gl.stencilMask(0x00);// 禁用写入，不更新模板缓冲，使用之前的数据进行对比
-        // gl.disable(gl.DEPTH_TEST); // 关闭深度测试，让边框被绘制
-        gl.depthFunc(gl.ALWAYS);
-        colorShader.use();
-        let scale = 1.1;
+        // windows
+        gl.bindVertexArray(windowsVAO);
+        gl.bindTexture(gl.TEXTURE_2D, transparentTexture);
 
-        // outline
-        gl.bindVertexArray(cubeVAO);
-        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
-
-        model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, 0.0, -1.0));
-        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(scale, scale, scale));
-        colorShader.setMat4("model", model);
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
-
-        model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
-        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(scale, scale, scale));
-        colorShader.setMat4("model", model);
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        // render by dinstance sort
+        const distanceSortedMap = new sdsl.OrderedMap();
+        for (let i = 0; i < windows.length; i++) {
+            let win = windows[i];
+            let distanceVec3 = glMatrix.vec3.create();
+            glMatrix.vec3.subtract(distanceVec3, camera.position, glMatrix.vec3.fromValues(...win))
+            let distance = glMatrix.vec3.length(distanceVec3);
+            distanceSortedMap.setElement(distance, win)
+        }
+        for (let it = distanceSortedMap.rBegin(); !it.equals(distanceSortedMap.rEnd()); it = it.next()) {
+            model = glMatrix.mat4.identity(glMatrix.mat4.create());
+            model = glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(...it.h.R));
+            shader.setMat4("model", model);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
         gl.bindVertexArray(null);
-
-        // 还原
-        gl.stencilMask(0xFF);// 每一位写入模板缓冲时都保持原样
-        gl.stencilFunc(gl.ALWAYS, 0, 0xFF);
-        gl.enable(gl.DEPTH_TEST);
-        gl.depthFunc(gl.LESS);
 
         stats.update();
         requestAnimationFrame(render);
@@ -249,6 +250,55 @@ async function main() {
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
     }
+
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "blend" });
+        var blend = {
+            sfactor: gl.SRC_ALPHA,
+            dfactor: gl.ONE_MINUS_SRC_ALPHA
+        };
+
+        GUI.add(blend, "sfactor", {
+            "GL_ZERO": gl.ZERO,
+            "GL_ONE": gl.ONE,
+            "GL_SRC_COLOR": gl.SRC_COLOR,
+            "GL_ONE_MINUS_SRC_COLOR": gl.ONE_MINUS_SRC_COLOR,
+            "GL_DST_COLOR": gl.DST_COLOR,
+            "GL_ONE_MINUS_DST_COLOR": gl.ONE_MINUS_DST_COLOR,
+            "GL_SRC_ALPHA": gl.SRC_ALPHA,
+            "GL_ONE_MINUS_SRC_ALPHA": gl.ONE_MINUS_SRC_ALPHA,
+            "GL_DST_ALPHA": gl.DST_ALPHA,
+            "GL_ONE_MINUS_DST_ALPHA": gl.ONE_MINUS_DST_ALPHA,
+            "GL_CONSTANT_COLOR": gl.CONSTANT_COLOR,
+            "GL_ONE_MINUS_CONSTANT_COLOR": gl.ONE_MINUS_CONSTANT_COLOR,
+            "GL_CONSTANT_ALPHA": gl.CONSTANT_ALPHA,
+            "GL_ONE_MINUS_CONSTANT_ALPHA": gl.ONE_MINUS_CONSTANT_ALPHA
+        }).onChange((key) => {
+            blend.sfactor = key
+            gl.blendFunc(key, blend.dfactor);
+        })
+
+        GUI.add(blend, "dfactor", {
+            "GL_ZERO": gl.ZERO,
+            "GL_ONE": gl.ONE,
+            "GL_SRC_COLOR": gl.SRC_COLOR,
+            "GL_ONE_MINUS_SRC_COLOR": gl.ONE_MINUS_SRC_COLOR,
+            "GL_DST_COLOR": gl.DST_COLOR,
+            "GL_ONE_MINUS_DST_COLOR": gl.ONE_MINUS_DST_COLOR,
+            "GL_SRC_ALPHA": gl.SRC_ALPHA,
+            "GL_ONE_MINUS_SRC_ALPHA": gl.ONE_MINUS_SRC_ALPHA,
+            "GL_DST_ALPHA": gl.DST_ALPHA,
+            "GL_ONE_MINUS_DST_ALPHA": gl.ONE_MINUS_DST_ALPHA,
+            "GL_CONSTANT_COLOR": gl.CONSTANT_COLOR,
+            "GL_ONE_MINUS_CONSTANT_COLOR": gl.ONE_MINUS_CONSTANT_COLOR,
+            "GL_CONSTANT_ALPHA": gl.CONSTANT_ALPHA,
+            "GL_ONE_MINUS_CONSTANT_ALPHA": gl.ONE_MINUS_CONSTANT_ALPHA
+        }).onChange((key) => {
+            blend.dfactor = key
+            gl.blendFunc(blend.dfactor, key);
+        })
+    }
+
 }
 
 async function loadTexture(gl, url) {
@@ -267,8 +317,8 @@ async function loadTexture(gl, url) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
             gl.generateMipmap(gl.TEXTURE_2D);
-    
-    
+
+
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

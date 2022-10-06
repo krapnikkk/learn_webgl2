@@ -138,7 +138,7 @@ async function main() {
 
     let cubeTexture = await loadTexture(gl, "../../resources/textures/marble.jpg");
     let floorTexture = await loadTexture(gl, "../../resources/textures/metal.png");
-    let vegetationTexture = await loadTexture(gl,"../../resources/textures/grass.png");
+    let vegetationTexture = await loadTexture(gl,"../../resources/textures/grass.png",gl.CLAMP_TO_EDGE);
 
     shader.use();
     addGUI(shader);
@@ -252,7 +252,7 @@ async function main() {
     }
 }
 
-async function loadTexture(gl, url) {
+async function loadTexture(gl, url,replaceMode) {
     return new Promise(async (resolve, reject) => {
         let image = await IJS.Image.load(url);
         let { width, height, data, channels } = image;
@@ -270,8 +270,8 @@ async function loadTexture(gl, url) {
             gl.generateMipmap(gl.TEXTURE_2D);
     
     
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, replaceMode?replaceMode:gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, replaceMode?replaceMode:gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
             resolve(texture);
