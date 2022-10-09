@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    html{
+      background-color: #000;
+    }
+
+    #canvas {
+      width: 800px;
+      height: 600px;
+      margin: auto;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+    }
+  </style>
+</head>
+<script src="../../libs/webgl-lint/webgl-lint.js"></script>
+<script src="../../libs/js-sdsl/js-sdsl.js"></script>
+<script src="../../libs/gl-matrix/gl-matrix.js"></script>
+<script src="../../libs/image-js/image-js.min.js"></script>
+<script src="../../libs/stats/stats.min.js"></script>
+<script src="../../libs/dat.gui/dat.gui.min.js"></script>
+<script src="../../libs/shader.js"></script>
+<script src="../../libs/camera.js"></script>
+<script src="main.js"></script>
+
+<body onload="main()">
+  <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+</html>
