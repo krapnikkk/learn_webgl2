@@ -10,7 +10,10 @@ let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
 let framesbufferFlag = true;
-
+var framesbuffer = {
+    switch: true,
+    line: false
+};
 async function main() {
     let stats = new Stats();
     document.body.appendChild(stats.dom);
@@ -82,16 +85,16 @@ async function main() {
         5.0, -0.5, -5.0, 2.0, 2.0
     ])
 
-    
+
     let quadVertices = new Float32Array([
         // positions   // texCoords
-        -1.0,  1.0,  0.0, 1.0,
-        -1.0, -1.0,  0.0, 0.0,
-         1.0, -1.0,  1.0, 0.0,
+        -1.0, 1.0, 0.0, 1.0,
+        -1.0, -1.0, 0.0, 0.0,
+        1.0, -1.0, 1.0, 0.0,
 
-        -1.0,  1.0,  0.0, 1.0,
-         1.0, -1.0,  1.0, 0.0,
-         1.0,  1.0,  1.0, 1.0
+        -1.0, 1.0, 0.0, 1.0,
+        1.0, -1.0, 1.0, 0.0,
+        1.0, 1.0, 1.0, 1.0
 
     ]);
 
@@ -123,7 +126,7 @@ async function main() {
     gl.bindVertexArray(null);
 
     let quadVAO = gl.createVertexArray();
-    let quadVBO = gl.createBuffer(); 
+    let quadVBO = gl.createBuffer();
     gl.bindVertexArray(quadVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
     gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
@@ -141,7 +144,7 @@ async function main() {
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
 
     screenShader.use();
-    screenShader.setInt("screenTexture",0);
+    screenShader.setInt("screenTexture", 0);
 
     // framebuffer configuration
     // -------------------------
@@ -164,8 +167,6 @@ async function main() {
         console.log("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    // draw as wireframe
-    // gl.polygonMode(gl.FRONT_AND_BACK, gl.LINE);
 
     addGUI();
 
@@ -173,9 +174,12 @@ async function main() {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
         lastFrame = currentFrame;
-
+        if (framesbuffer.switch) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+        }
         gl.enable(gl.DEPTH_TEST);
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
+
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         shader.use();
@@ -206,18 +210,18 @@ async function main() {
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindVertexArray(null);
 
-        if(framesbufferFlag){
-            // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
+        if (framesbuffer.switch) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.disable(gl.DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
             // clear all relevant buffers
+            // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
             gl.clearColor(1.0, 1.0, 1.0, 1.0); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             screenShader.use();
             gl.bindVertexArray(quadVAO);
             gl.bindTexture(gl.TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane
-            gl.drawArrays(gl.LINES, 0, 6);
+            gl.drawArrays(framesbuffer.line ? gl.LINES : gl.TRIANGLES, 0, 6);
             gl.bindVertexArray(null);
         }
 
@@ -270,13 +274,11 @@ async function main() {
 
     function addGUI() {
         const GUI = new dat.GUI({ name: "framesbuffer" });
-        var framesbuffer = {
-            switch: true,
-        };
-        
-        GUI.add(framesbuffer, "switch").name("enable framesbuffer").onChange((val)=>{
-            framesbufferFlag = val;
-        });
+
+
+        GUI.add(framesbuffer, "switch").name("framesbuffer")
+
+        GUI.add(framesbuffer, "line").name("line")
     }
 
 }
@@ -297,8 +299,8 @@ async function loadTexture(gl, url) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
             gl.generateMipmap(gl.TEXTURE_2D);
-    
-    
+
+
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
