@@ -20,13 +20,12 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    let skyboxShader = new Shader(gl, "skybox.vs", "skybox.fs");
+    await skyboxShader.initialize();
 
-    addGUI();
+    let cubemapsShader = new Shader(gl, "cubemaps.vs", "cubemaps.fs");
+    await cubemapsShader.initialize();
 
-    let shader = new Shader(gl, "shader.vs", "shader.fs");
-    await shader.initialize();
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
         -0.5, -0.5, -0.5, 0.0, 0.0,
@@ -72,35 +71,50 @@ async function main() {
         -0.5, 0.5, -0.5, 0.0, 1.0
     ]);
 
-    let planeVertices = new Float32Array([
-        // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-        5.0, -0.5, 5.0, 2.0, 0.0,
-        -5.0, -0.5, 5.0, 0.0, 0.0,
-        -5.0, -0.5, -5.0, 0.0, 2.0,
+    let skyboxVertices = new Float32Array([
+        // positions          
+        -1.0,  1.0, -1.0,
+        -1.0, -1.0, -1.0,
+         1.0, -1.0, -1.0,
+         1.0, -1.0, -1.0,
+         1.0,  1.0, -1.0,
+        -1.0,  1.0, -1.0,
 
-        5.0, -0.5, 5.0, 2.0, 0.0,
-        -5.0, -0.5, -5.0, 0.0, 2.0,
-        5.0, -0.5, -5.0, 2.0, 2.0
-    ])
+        -1.0, -1.0,  1.0,
+        -1.0, -1.0, -1.0,
+        -1.0,  1.0, -1.0,
+        -1.0,  1.0, -1.0,
+        -1.0,  1.0,  1.0,
+        -1.0, -1.0,  1.0,
 
-    let transparentVertices = new Float32Array([
-        // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
-        0.0, 0.5, 0.0, 0.0, 0.0,
-        0.0, -0.5, 0.0, 0.0, 1.0,
-        1.0, -0.5, 0.0, 1.0, 1.0,
+         1.0, -1.0, -1.0,
+         1.0, -1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0, -1.0,
+         1.0, -1.0, -1.0,
 
-        0.0, 0.5, 0.0, 0.0, 0.0,
-        1.0, -0.5, 0.0, 1.0, 1.0,
-        1.0, 0.5, 0.0, 1.0, 0.0
+        -1.0, -1.0,  1.0,
+        -1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0, -1.0,  1.0,
+        -1.0, -1.0,  1.0,
+
+        -1.0,  1.0, -1.0,
+         1.0,  1.0, -1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+        -1.0,  1.0,  1.0,
+        -1.0,  1.0, -1.0,
+
+        -1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+         1.0, -1.0, -1.0,
+         1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+         1.0, -1.0,  1.0
     ]);
-
-    let windows = [
-        [-1.5, 0.0, -0.48],
-        [1.5, 0.0, 0.51],
-        [0.0, 0.0, 0.7],
-        [-0.3, 0.0, -2.3],
-        [0.5, 0.0, -0.6]
-    ]
 
     let positionLoc = 0, texCoordLoc = 1;
 
@@ -116,36 +130,32 @@ async function main() {
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
-    let planeVAO = gl.createVertexArray();
-    let planeVBO = gl.createBuffer();
+    let skyboxVAO = gl.createVertexArray();
+    let skyboxVBO = gl.createBuffer();
 
-    gl.bindVertexArray(planeVAO);
-    gl.bindBuffer(gl.ARRAY_BUFFER, planeVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, planeVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * planeVertices.BYTES_PER_ELEMENT, 0);
+    gl.bindVertexArray(skyboxVAO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, skyboxVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, skyboxVertices, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 3 * skyboxVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * planeVertices.BYTES_PER_ELEMENT, 3 * planeVertices.BYTES_PER_ELEMENT);
-    gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
-    let windowsVAO = gl.createVertexArray();
-    let windowsVBO = gl.createBuffer();
+    let cubeTexture = await loadTexture(gl, "../../resources/textures/container.jpg");
+    cubemapsShader.use();
+    cubemapsShader.setInt("texture1",0)
 
-    gl.bindVertexArray(windowsVAO);
-    gl.bindBuffer(gl.ARRAY_BUFFER, windowsVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, transparentVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * transparentVertices.BYTES_PER_ELEMENT, 0);
-    gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * transparentVertices.BYTES_PER_ELEMENT, 3 * transparentVertices.BYTES_PER_ELEMENT);
-    gl.enableVertexAttribArray(texCoordLoc);
-    gl.bindVertexArray(null);
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 0);
 
-    let cubeTexture = await loadTexture(gl, "../../resources/textures/marble.jpg");
-    let floorTexture = await loadTexture(gl, "../../resources/textures/metal.png");
-    let transparentTexture = await loadTexture(gl, "../../resources/textures/window.png");
-
-    shader.use();
-    gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
+    let faces = [
+        "../../resources/skybox/right.jpg",
+        "../../resources/skybox/left.jpg",
+        "../../resources/skybox/top.jpg",
+        "../../resources/skybox/bottom.jpg",
+        "../../resources/skybox/front.jpg",
+        "../../resources/skybox/back.jpg"
+    ];
+    let cubemapTexture = await loadCubemap(gl,faces);
 
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
@@ -155,54 +165,39 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        shader.use();
+        cubemapsShader.use();
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.rotate(model, model, time / 1000, glMatrix.vec3.fromValues(0.5, 1.0, 0.0));
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
+        cubemapsShader.setMat4("model", model);
+        cubemapsShader.setMat4("view", view);
+        cubemapsShader.setMat4("projection", projection);
 
         // cubes
         gl.bindVertexArray(cubeVAO);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, 0.0, -1.0));
-        shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
-        model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
-        shader.setMat4("model", model);
+        // draw skybox as last
+        gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+        skyboxShader.use();
+        // remove translation from the view matrix
+        view = camera.getViewMatrix();
+        view[12] = view[13] = view[14] = 0.0;
+        skyboxShader.setMat4("view", view);
+        skyboxShader.setMat4("projection", projection);
+
+        // skybox cube
+        gl.bindVertexArray(skyboxVAO);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
-        // floor
-        gl.bindVertexArray(planeVAO);
-        gl.bindTexture(gl.TEXTURE_2D, floorTexture);
-        shader.setMat4("model", glMatrix.mat4.identity(glMatrix.mat4.create()));
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindVertexArray(null);
-
-        // windows
-        gl.bindVertexArray(windowsVAO);
-        gl.bindTexture(gl.TEXTURE_2D, transparentTexture);
-
-        // render by dinstance sort
-        const distanceSortedMap = new sdsl.OrderedMap();
-        for (let i = 0; i < windows.length; i++) {
-            let win = windows[i];
-            let distanceVec3 = glMatrix.vec3.create();
-            glMatrix.vec3.subtract(distanceVec3, camera.position, glMatrix.vec3.fromValues(...win))
-            let distance = glMatrix.vec3.length(distanceVec3);
-            distanceSortedMap.setElement(distance, win)
-        }
-        for (let it = distanceSortedMap.rBegin(); !it.equals(distanceSortedMap.rEnd()); it = it.next()) {
-            model = glMatrix.mat4.identity(glMatrix.mat4.create());
-            model = glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(...it.h.R));
-            shader.setMat4("model", model);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-        }
-        gl.bindVertexArray(null);
+        gl.depthFunc(gl.LESS); // set depth function back to default
 
         stats.update();
         requestAnimationFrame(render);
@@ -251,53 +246,6 @@ async function main() {
         camera.onMouseScroll(e.deltaY / 100);
     }
 
-    function addGUI() {
-        const GUI = new dat.GUI({ name: "blend" });
-        var blend = {
-            sfactor: gl.SRC_ALPHA,
-            dfactor: gl.ONE_MINUS_SRC_ALPHA
-        };
-
-        GUI.add(blend, "sfactor", {
-            "GL_ZERO": gl.ZERO,
-            "GL_ONE": gl.ONE,
-            "GL_SRC_COLOR": gl.SRC_COLOR,
-            "GL_ONE_MINUS_SRC_COLOR": gl.ONE_MINUS_SRC_COLOR,
-            "GL_DST_COLOR": gl.DST_COLOR,
-            "GL_ONE_MINUS_DST_COLOR": gl.ONE_MINUS_DST_COLOR,
-            "GL_SRC_ALPHA": gl.SRC_ALPHA,
-            "GL_ONE_MINUS_SRC_ALPHA": gl.ONE_MINUS_SRC_ALPHA,
-            "GL_DST_ALPHA": gl.DST_ALPHA,
-            "GL_ONE_MINUS_DST_ALPHA": gl.ONE_MINUS_DST_ALPHA,
-            "GL_CONSTANT_COLOR": gl.CONSTANT_COLOR,
-            "GL_ONE_MINUS_CONSTANT_COLOR": gl.ONE_MINUS_CONSTANT_COLOR,
-            "GL_CONSTANT_ALPHA": gl.CONSTANT_ALPHA,
-            "GL_ONE_MINUS_CONSTANT_ALPHA": gl.ONE_MINUS_CONSTANT_ALPHA
-        }).onChange((key) => {
-            blend.sfactor = key
-            gl.blendFunc(key, blend.dfactor);
-        })
-
-        GUI.add(blend, "dfactor", {
-            "GL_ZERO": gl.ZERO,
-            "GL_ONE": gl.ONE,
-            "GL_SRC_COLOR": gl.SRC_COLOR,
-            "GL_ONE_MINUS_SRC_COLOR": gl.ONE_MINUS_SRC_COLOR,
-            "GL_DST_COLOR": gl.DST_COLOR,
-            "GL_ONE_MINUS_DST_COLOR": gl.ONE_MINUS_DST_COLOR,
-            "GL_SRC_ALPHA": gl.SRC_ALPHA,
-            "GL_ONE_MINUS_SRC_ALPHA": gl.ONE_MINUS_SRC_ALPHA,
-            "GL_DST_ALPHA": gl.DST_ALPHA,
-            "GL_ONE_MINUS_DST_ALPHA": gl.ONE_MINUS_DST_ALPHA,
-            "GL_CONSTANT_COLOR": gl.CONSTANT_COLOR,
-            "GL_ONE_MINUS_CONSTANT_COLOR": gl.ONE_MINUS_CONSTANT_COLOR,
-            "GL_CONSTANT_ALPHA": gl.CONSTANT_ALPHA,
-            "GL_ONE_MINUS_CONSTANT_ALPHA": gl.ONE_MINUS_CONSTANT_ALPHA
-        }).onChange((key) => {
-            blend.dfactor = key
-            gl.blendFunc(blend.dfactor, key);
-        })
-    }
 
 }
 
@@ -331,4 +279,37 @@ async function loadTexture(gl, url) {
 
     })
 }
+
+async function loadCubemap(gl, urls) {
+    return new Promise(async (resolve, reject) => {
+        let texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+        for(let i = 0;i<urls.length;i++){
+            let url = urls[i];
+            let image = await IJS.Image.load(url);
+            let { width, height, data, channels } = image;
+            if (data) {
+                let format;
+                if (channels == 1)
+                    format = gl.RED;
+                else if (channels == 3)
+                    format = gl.RGB;
+                else if (channels == 4)
+                    format = gl.RGBA;
+                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
+    
+            } else {
+                reject()
+                console.warn("Texture failed to load at path: " + url);
+            }
+        }
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        resolve(texture);
+    })
+}
+
 
