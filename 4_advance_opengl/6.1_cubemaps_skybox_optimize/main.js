@@ -165,40 +165,39 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        
+        cubemapsShader.use();
+
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-        
-        
-        
-        // skybox cube
-        gl.depthMask(false);
-        skyboxShader.use();
-        // remove translation from the view matrix
-        view[12] = view[13] = view[14] = 0.0;
-        skyboxShader.setMat4("view", view);
-        skyboxShader.setMat4("projection", projection);
-        gl.bindVertexArray(skyboxVAO);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
-        
-        gl.depthMask(true);
-        cubemapsShader.use();
         glMatrix.mat4.rotate(model, model, time / 1000, glMatrix.vec3.fromValues(0.5, 1.0, 0.0));
+        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         cubemapsShader.setMat4("model", model);
-        cubemapsShader.setMat4("view", camera.getViewMatrix());
+        cubemapsShader.setMat4("view", view);
         cubemapsShader.setMat4("projection", projection);
+
         // cubes
         gl.bindVertexArray(cubeVAO);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+        // draw skybox as last
+        gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+        skyboxShader.use();
+        // remove translation from the view matrix
+        view = camera.getViewMatrix();
+        view[12] = view[13] = view[14] = 0.0;
+        skyboxShader.setMat4("view", view);
+        skyboxShader.setMat4("projection", projection);
+
+        // skybox cube
+        gl.bindVertexArray(skyboxVAO);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
-
-
+        gl.depthFunc(gl.LESS); // set depth function back to default
 
         stats.update();
         requestAnimationFrame(render);

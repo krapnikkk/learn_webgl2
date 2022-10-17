@@ -27,48 +27,48 @@ async function main() {
     await cubemapsShader.initialize();
 
     let cubeVertices = new Float32Array([
-        // positions          // texture Coords
-        -0.5, -0.5, -0.5, 0.0, 0.0,
-        0.5, -0.5, -0.5, 1.0, 0.0,
-        0.5, 0.5, -0.5, 1.0, 1.0,
-        0.5, 0.5, -0.5, 1.0, 1.0,
-        -0.5, 0.5, -0.5, 0.0, 1.0,
-        -0.5, -0.5, -0.5, 0.0, 0.0,
+        // positions          // normals
+        -0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
+         0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
+         0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
+         0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
+        -0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
+        -0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
 
-        -0.5, -0.5, 0.5, 0.0, 0.0,
-        0.5, -0.5, 0.5, 1.0, 0.0,
-        0.5, 0.5, 0.5, 1.0, 1.0,
-        0.5, 0.5, 0.5, 1.0, 1.0,
-        -0.5, 0.5, 0.5, 0.0, 1.0,
-        -0.5, -0.5, 0.5, 0.0, 0.0,
+        -0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
+         0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
+         0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
+         0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
+        -0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
+        -0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
 
-        -0.5, 0.5, 0.5, 1.0, 0.0,
-        -0.5, 0.5, -0.5, 1.0, 1.0,
-        -0.5, -0.5, -0.5, 0.0, 1.0,
-        -0.5, -0.5, -0.5, 0.0, 1.0,
-        -0.5, -0.5, 0.5, 0.0, 0.0,
-        -0.5, 0.5, 0.5, 1.0, 0.0,
+        -0.5,  0.5,  0.5, -1.0,  0.0,  0.0,
+        -0.5,  0.5, -0.5, -1.0,  0.0,  0.0,
+        -0.5, -0.5, -0.5, -1.0,  0.0,  0.0,
+        -0.5, -0.5, -0.5, -1.0,  0.0,  0.0,
+        -0.5, -0.5,  0.5, -1.0,  0.0,  0.0,
+        -0.5,  0.5,  0.5, -1.0,  0.0,  0.0,
 
-        0.5, 0.5, 0.5, 1.0, 0.0,
-        0.5, 0.5, -0.5, 1.0, 1.0,
-        0.5, -0.5, -0.5, 0.0, 1.0,
-        0.5, -0.5, -0.5, 0.0, 1.0,
-        0.5, -0.5, 0.5, 0.0, 0.0,
-        0.5, 0.5, 0.5, 1.0, 0.0,
+         0.5,  0.5,  0.5,  1.0,  0.0,  0.0,
+         0.5,  0.5, -0.5,  1.0,  0.0,  0.0,
+         0.5, -0.5, -0.5,  1.0,  0.0,  0.0,
+         0.5, -0.5, -0.5,  1.0,  0.0,  0.0,
+         0.5, -0.5,  0.5,  1.0,  0.0,  0.0,
+         0.5,  0.5,  0.5,  1.0,  0.0,  0.0,
 
-        -0.5, -0.5, -0.5, 0.0, 1.0,
-        0.5, -0.5, -0.5, 1.0, 1.0,
-        0.5, -0.5, 0.5, 1.0, 0.0,
-        0.5, -0.5, 0.5, 1.0, 0.0,
-        -0.5, -0.5, 0.5, 0.0, 0.0,
-        -0.5, -0.5, -0.5, 0.0, 1.0,
+        -0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
+         0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
+         0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
+         0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
+        -0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
+        -0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
 
-        -0.5, 0.5, -0.5, 0.0, 1.0,
-        0.5, 0.5, -0.5, 1.0, 1.0,
-        0.5, 0.5, 0.5, 1.0, 0.0,
-        0.5, 0.5, 0.5, 1.0, 0.0,
-        -0.5, 0.5, 0.5, 0.0, 0.0,
-        -0.5, 0.5, -0.5, 0.0, 1.0
+        -0.5,  0.5, -0.5,  0.0,  1.0,  0.0,
+         0.5,  0.5, -0.5,  0.0,  1.0,  0.0,
+         0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
+         0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
+        -0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
+        -0.5,  0.5, -0.5,  0.0,  1.0,  0.0
     ]);
 
     let skyboxVertices = new Float32Array([
@@ -116,7 +116,7 @@ async function main() {
          1.0, -1.0,  1.0
     ]);
 
-    let positionLoc = 0, texCoordLoc = 1;
+    let positionLoc = 0, normalLoc = 1;
 
     let cubeVAO = gl.createVertexArray();
     let cubeVBO = gl.createBuffer();
@@ -124,10 +124,10 @@ async function main() {
     gl.bindVertexArray(cubeVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
     gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * cubeVertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 6 * cubeVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * cubeVertices.BYTES_PER_ELEMENT, 3 * cubeVertices.BYTES_PER_ELEMENT);
-    gl.enableVertexAttribArray(texCoordLoc);
+    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 6 * cubeVertices.BYTES_PER_ELEMENT, 3 * cubeVertices.BYTES_PER_ELEMENT);
+    gl.enableVertexAttribArray(normalLoc);
     gl.bindVertexArray(null);
 
     let skyboxVAO = gl.createVertexArray();
@@ -139,10 +139,6 @@ async function main() {
     gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 3 * skyboxVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
     gl.bindVertexArray(null);
-
-    let cubeTexture = await loadTexture(gl, "../../resources/textures/container.jpg");
-    cubemapsShader.use();
-    cubemapsShader.setInt("texture1",0)
 
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
@@ -165,40 +161,41 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        
+        cubemapsShader.use();
+
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.rotate(model, model, time / 5000, glMatrix.vec3.fromValues(0.5, 1.0, 0.0));
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-        
-        
-        
-        // skybox cube
-        gl.depthMask(false);
+        cubemapsShader.setMat4("model", model);
+        cubemapsShader.setMat4("view", view);
+        cubemapsShader.setMat4("projection", projection);
+        cubemapsShader.setVec3("cameraPos", camera.position);
+
+        // cubes
+        gl.bindVertexArray(cubeVAO);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        gl.bindVertexArray(null);
+
+        // draw skybox as last
+        gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
         // remove translation from the view matrix
+        view = camera.getViewMatrix();
         view[12] = view[13] = view[14] = 0.0;
         skyboxShader.setMat4("view", view);
         skyboxShader.setMat4("projection", projection);
+
+        // skybox cube
         gl.bindVertexArray(skyboxVAO);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
-        
-        gl.depthMask(true);
-        cubemapsShader.use();
-        glMatrix.mat4.rotate(model, model, time / 1000, glMatrix.vec3.fromValues(0.5, 1.0, 0.0));
-        cubemapsShader.setMat4("model", model);
-        cubemapsShader.setMat4("view", camera.getViewMatrix());
-        cubemapsShader.setMat4("projection", projection);
-        // cubes
-        gl.bindVertexArray(cubeVAO);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
-
-
+        gl.depthFunc(gl.LESS); // set depth function back to default
 
         stats.update();
         requestAnimationFrame(render);
@@ -247,7 +244,10 @@ async function main() {
         camera.onMouseScroll(e.deltaY / 100);
     }
 
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "skybox" });
 
+    }
 }
 
 async function loadTexture(gl, url) {
