@@ -106,8 +106,11 @@ class Model {
         let normalMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_HEIGHT, "texture_normal");
         textures = textures.concat(normalMaps);
         // 4. height maps
-        let heightMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_AMBIENT, "texture_ambient");
-        textures = textures.concat(heightMaps);
+        // let heightMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_AMBIENT, "texture_ambient");
+        // textures = textures.concat(heightMaps);
+        // 5. reflection maps
+        let reflectionMaps = await this.loadMaterialTextures(material, textureTypeMap.aiTextureType_AMBIENT, "texture_reflection");
+        textures = textures.concat(reflectionMaps);
 
         // return a mesh object created from the extracted mesh data
         return new Mesh(this.gl, vertices, indices, textures);

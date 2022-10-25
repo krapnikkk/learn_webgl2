@@ -61,6 +61,7 @@ class Mesh {
         let specularNr = 1;
         let normalNr = 1;
         let ambientNr = 1;
+        let reflectionNr  = 1;
 
         for (let i = 0; i < this.textures.length; i++) {
             this.gl.activeTexture(this.gl.TEXTURE0 + i); // active proper texture unit before binding
@@ -75,6 +76,8 @@ class Mesh {
                 number = normalNr++;// transfer unsigned int to string
             else if (name == "texture_ambient")
                 number = ambientNr++;// transfer unsigned int to string
+            else if (name == "texture_reflection")
+                number = reflectionNr++;// transfer unsigned int to string
             else
                 continue
 
