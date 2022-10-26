@@ -82,9 +82,17 @@ async function main() {
     gl.enableVertexAttribArray(positionLoc);
     gl.bindVertexArray(null);
 
+    
     skyboxShader.use();
-    skyboxShader.setInt("skybox", 0);
-
+    skyboxShader.setInt("skybox", 4);
+    
+    let modelShader = new Shader(gl, "model.vs", "model.fs");
+    await modelShader.initialize();
+    
+    modelShader.use();
+    modelShader.setInt("skybox", 4);
+    
+    gl.activeTexture(gl.TEXTURE4);
     let faces = [
         "../../resources/skybox/right.jpg",
         "../../resources/skybox/left.jpg",
@@ -94,9 +102,6 @@ async function main() {
         "../../resources/skybox/back.jpg"
     ];
     let cubemapTexture = await loadCubemap(gl,faces);
-
-    let modelShader = new Shader(gl, "model.vs", "model.fs");
-    await modelShader.initialize();
 
     let obj = new Model(gl, '../../resources/objects/nanosuit');
     await obj.loadModel(['nanosuit.mtl', 'nanosuit.obj'])
@@ -123,11 +128,10 @@ async function main() {
         modelShader.setMat4("view", view);
         modelShader.setVec3("cameraPos", camera.position);
         modelShader.setMat4("model", model);
-        modelShader.setInt("material.environment", 4);
-        gl.activeTexture(gl.TEXTURE4);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
         // obj
         obj.draw(modelShader);
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 
         // draw skybox as last
         gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
@@ -140,7 +144,7 @@ async function main() {
 
         // skybox cube
         gl.bindVertexArray(skyboxVAO);
-        gl.activeTexture(gl.TEXTURE0);
+        gl.activeTexture(gl.TEXTURE4);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
@@ -199,36 +203,6 @@ async function main() {
     }
 }
 
-async function loadTexture(gl, url) {
-    return new Promise(async (resolve, reject) => {
-        let image = await IJS.Image.load(url);
-        let { width, height, data, channels } = image;
-        if (data) {
-            let format;
-            if (channels == 1)
-                format = gl.RED;
-            else if (channels == 3)
-                format = gl.RGB;
-            else if (channels == 4)
-                format = gl.RGBA;
-            let texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
-            gl.generateMipmap(gl.TEXTURE_2D);
-
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-            resolve(texture);
-        } else {
-            reject()
-            console.warn("Texture failed to load at path: " + url);
-        }
-
-    })
-}
 
 async function loadCubemap(gl, urls) {
     return new Promise(async (resolve, reject) => {

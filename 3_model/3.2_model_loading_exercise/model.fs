@@ -27,7 +27,7 @@ uniform vec3 viewPos;
 uniform float shininess;
 #define NR_POINT_LIGHTS 2
 uniform PointLight pointLights[NR_POINT_LIGHTS];
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, float shininess, sampler2D sampler_diffuse, sampler2D sampler_specular);
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, float shininess, sampler2D sampler_diffuse, sampler2D sampler_specular,sampler2D texture_ambient1);
 
 void main() {
     vec3 norm = normalize(Normal);
@@ -37,14 +37,14 @@ void main() {
 
     //pointLight
     for(int i = 0; i < NR_POINT_LIGHTS; i++) 
-        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir, shininess,texture_diffuse1,texture_specular1);
+        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir, shininess,texture_diffuse1,texture_specular1,texture_ambient1);
 
     FragColor = vec4(result, 1.0);
 }
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, float shininess, sampler2D sampler_diffuse, sampler2D sampler_specular) {
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, float shininess, sampler2D sampler_diffuse, sampler2D sampler_specular,sampler2D sampler_ambient) {
     //ambient
-    vec3 ambient = light.ambient * vec3(texture(sampler_specular, TexCoords));
+    vec3 ambient = light.ambient * vec3(texture(sampler_ambient, TexCoords));
 
     // diffuse
     vec3 norm = normalize(normal);

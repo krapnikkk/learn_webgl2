@@ -14,10 +14,7 @@ uniform sampler2D texture_ambient1;
 
 uniform vec3 cameraPos;
 
-struct Material {
-    samplerCube environment;
-};
-uniform Material material;
+uniform samplerCube skybox;
 
 void main() {
 
@@ -27,16 +24,17 @@ void main() {
     vec3 R = reflect(-viewDir, normal);
     // reflection
     vec3 reflectMap = vec3(texture(texture_reflection1, TexCoords));
-    vec3 reflection = vec3(texture(material.environment, R)) * reflectMap;
+    vec3 reflection = vec3(texture(skybox, R)) * reflectMap;
 
     // diffuse
     float diff = max(normalize(dot(normal, viewDir)), 0.0f);
-    vec3 diffuse = diff * vec3(texture(texture_diffuse1, TexCoords));
+    vec4 diffuse = diff * texture(texture_diffuse1, TexCoords);
 
     // normal
     vec4 normalMap = texture(texture_normal1,TexCoords);
 
     // specular
     vec3 specular = vec3(texture(texture_specular1, TexCoords));
-    FragColor = vec4(diffuse + reflection + specular, 1.0f);
+    
+    FragColor = diffuse + vec4( reflection, 1.0f);
 }
