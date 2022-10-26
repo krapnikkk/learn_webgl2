@@ -1,0 +1,239 @@
+let cameraPos = glMatrix.vec3.fromValues(0.0, 4.0, 0.0);
+let camera = new Camera(cameraPos);
+
+const SCR_WIDTH = 800;
+const SCR_HEIGHT = 600;
+
+let deltaTime = 0.0;	// time between current frame and last frame
+let lastFrame = 0.0;
+let isFirstMouse = true;
+let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
+
+
+
+async function main() {
+    let stats = new Stats();
+    document.body.appendChild(stats.dom);
+
+    const gl = document.getElementById("canvas").getContext("webgl2");
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+    gl.enable(gl.DEPTH_TEST);
+
+    let skyboxShader = new Shader(gl, "skybox.vs", "skybox.fs");
+    await skyboxShader.initialize();
+
+    
+    let skyboxVertices = new Float32Array([
+        // positions          
+        -1.0,  1.0, -1.0,
+        -1.0, -1.0, -1.0,
+         1.0, -1.0, -1.0,
+         1.0, -1.0, -1.0,
+         1.0,  1.0, -1.0,
+        -1.0,  1.0, -1.0,
+
+        -1.0, -1.0,  1.0,
+        -1.0, -1.0, -1.0,
+        -1.0,  1.0, -1.0,
+        -1.0,  1.0, -1.0,
+        -1.0,  1.0,  1.0,
+        -1.0, -1.0,  1.0,
+
+         1.0, -1.0, -1.0,
+         1.0, -1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0, -1.0,
+         1.0, -1.0, -1.0,
+
+        -1.0, -1.0,  1.0,
+        -1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0, -1.0,  1.0,
+        -1.0, -1.0,  1.0,
+
+        -1.0,  1.0, -1.0,
+         1.0,  1.0, -1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+        -1.0,  1.0,  1.0,
+        -1.0,  1.0, -1.0,
+
+        -1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+         1.0, -1.0, -1.0,
+         1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+         1.0, -1.0,  1.0
+    ]);
+
+    let positionLoc = 0, normalLoc = 1;
+
+
+    let skyboxVAO = gl.createVertexArray();
+    let skyboxVBO = gl.createBuffer();
+
+    gl.bindVertexArray(skyboxVAO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, skyboxVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, skyboxVertices, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 3 * skyboxVertices.BYTES_PER_ELEMENT, 0);
+    gl.enableVertexAttribArray(positionLoc);
+    gl.bindVertexArray(null);
+
+    
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 4);
+    
+    let modelShader = new Shader(gl, "model.vs", "model.fs");
+    await modelShader.initialize();
+    
+    modelShader.use();
+    modelShader.setInt("skybox", 4);
+    
+    gl.activeTexture(gl.TEXTURE4);
+    let faces = [
+        "../../resources/skybox/right.jpg",
+        "../../resources/skybox/left.jpg",
+        "../../resources/skybox/top.jpg",
+        "../../resources/skybox/bottom.jpg",
+        "../../resources/skybox/front.jpg",
+        "../../resources/skybox/back.jpg"
+    ];
+    let cubemapTexture = await loadCubemap(gl,faces);
+
+    let obj = new Model(gl, '../../resources/objects/nanosuit');
+    await obj.loadModel(['nanosuit.mtl', 'nanosuit.obj'])
+
+    function render(time) {
+        let currentFrame = Math.round(time) / 1000;
+        deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
+        lastFrame = currentFrame;
+
+        gl.clearColor(0.1, 0.1, 0.1, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        modelShader.use();
+
+        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        let view = camera.getViewMatrix();
+        let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0,0,-10));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5,0.5,0.5));
+        // glMatrix.mat4.rotate(model, model, currentFrame, glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
+
+        modelShader.setMat4("projection", projection);
+        modelShader.setMat4("view", view);
+        modelShader.setVec3("cameraPos", camera.position);
+        modelShader.setMat4("model", model);
+        // obj
+        obj.draw(modelShader);
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+
+        // draw skybox as last
+        gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+        skyboxShader.use();
+        // remove translation from the view matrix
+        view = camera.getViewMatrix();
+        view[12] = view[13] = view[14] = 0.0;
+        skyboxShader.setMat4("view", view);
+        skyboxShader.setMat4("projection", projection);
+
+        // skybox cube
+        gl.bindVertexArray(skyboxVAO);
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        gl.bindVertexArray(null);
+        gl.depthFunc(gl.LESS); // set depth function back to default
+
+        stats.update();
+        requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+
+    let moveLock = true;
+    document.onkeydown = (e) => {
+        camera.onKeydown(e.code, deltaTime);
+
+        if (e.code == "Escape") {
+            moveLock = true;
+        }
+    }
+
+    canvas.onclick = (e) => {
+        if (moveLock) {
+            moveLock = false;
+        } else {
+            moveLock = true;
+        }
+        isFirstMouse = true;
+    }
+
+    canvas.onmousemove = (e) => {
+        if (moveLock) {
+            return;
+        }
+        let { clientX, clientY } = e;
+        if (isFirstMouse) {
+            lastX = clientX;
+            lastY = clientY;
+            isFirstMouse = false;
+        }
+        let offsetX = clientX - lastX;
+        let offsetY = lastY - clientY;
+
+        lastX = clientX;
+        lastY = clientY;
+
+        camera.onMousemove(offsetX, offsetY);
+    }
+
+    canvas.onwheel = (e) => {
+        camera.onMouseScroll(e.deltaY / 100);
+    }
+
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "skybox" });
+
+    }
+}
+
+
+async function loadCubemap(gl, urls) {
+    return new Promise(async (resolve, reject) => {
+        let texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+        for(let i = 0;i<urls.length;i++){
+            let url = urls[i];
+            let image = await IJS.Image.load(url);
+            let { width, height, data, channels } = image;
+            if (data) {
+                let format;
+                if (channels == 1)
+                    format = gl.RED;
+                else if (channels == 3)
+                    format = gl.RGB;
+                else if (channels == 4)
+                    format = gl.RGBA;
+                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
+    
+            } else {
+                reject()
+                console.warn("Texture failed to load at path: " + url);
+            }
+        }
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        resolve(texture);
+    })
+}
+
+
