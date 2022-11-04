@@ -1,4 +1,4 @@
-/* webgl-lint@1.9.4, license MIT */
+/* webgl-lint@1.9.5, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -1597,7 +1597,7 @@ needs ${sizeNeeded} bytes for draw but buffer is only ${bufferSize} bytes`);
    * @param {WebGLRenderingContext|Extension} ctx The webgl context to wrap.
    * @param {string} nameOfClass (eg, webgl, webgl2, OES_texture_float)
    */
-  function augmentAPI(ctx, nameOfClass, options = {}) {
+  function augmentAPI(ctx, nameOfClass, options = {}) {  // eslint-disable-line consistent-return
 
     if (augmentedSet.has(ctx)) {
       return ctx;
@@ -2280,6 +2280,23 @@ needs ${sizeNeeded} bytes for draw but buffer is only ${bufferSize} bytes`);
       }
     }
 
+    function checkTextureTypeInSameSamplerLocation(ctx, funcName, args){
+      const uniformSamplerInfos = programToUniformSamplerValues.get(sharedState.currentProgram);
+      const uniformSamplersMap = new Map();
+      for (const {type, values, name} of uniformSamplerInfos) {
+        let value = values[0];
+        let uniformSamplerType = uniformSamplersMap.get(value);
+        if(!uniformSamplerType){
+          uniformSamplersMap.set(value,type);
+        }else {
+          if(uniformSamplerType !== type){
+            reportFunctionError(ctx, funcName, args, `Two textures of different types can't use the same sampler location. uniform ${getUniformTypeInfo(type).name} ${getUniformElementName(name, values.length, 0)} is not ${getUniformTypeInfo(uniformSamplerType).name}`);
+            return;
+          }
+        }
+      }
+    }
+
     function checkUnsetUniformsAndUnrenderableTextures(ctx, funcName, args) {
       if (!sharedState.currentProgram) {
         reportFunctionError(ctx, funcName, args, 'no current program');
@@ -2287,6 +2304,7 @@ needs ${sizeNeeded} bytes for draw but buffer is only ${bufferSize} bytes`);
       }
       checkUnsetUniforms(ctx, funcName, args);
       checkUnRenderableTextures(ctx, funcName, args);
+      checkTextureTypeInSameSamplerLocation(ctx, funcName, args);
     }
 
     const preChecks = {
@@ -2349,9 +2367,9 @@ needs ${sizeNeeded} bytes for draw but buffer is only ${bufferSize} bytes`);
       return isUniformNameIgnored(locationsToNamesMap.get(webglUniformLocation));
     }
 
-    function isUniformBlock(ctx,args){
+    function isUniformBlock(ctx, args){
       const [program, name] = args;
-      return isWebGL2(ctx) && ctx.getUniformIndices(program,[name])[0] !== ctx.INVALID_INDEX;
+      return isWebGL2(ctx) && ctx.getUniformIndices(program, [name])[0] !== ctx.INVALID_INDEX;
     }
 
     function markUniformSetMatrixV(numValuesPer) {
@@ -2576,7 +2594,7 @@ needs ${sizeNeeded} bytes for draw but buffer is only ${bufferSize} bytes`);
           locationsToNamesMap.set(location, name);
           programToLocationsMap.get(program).add(location);
         } else {
-          if (!isUniformNameIgnored(name)&&!isUniformBlock(ctx,args)) {
+          if (!isUniformNameIgnored(name) && !isUniformBlock(ctx, args)) {
             warnOrThrowFunctionError(
                 ctx,
                 funcName,
