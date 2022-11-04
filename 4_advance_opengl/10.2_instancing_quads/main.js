@@ -13,8 +13,6 @@ let translations = [];
 let offset = 0.1;
 for (let y = -10; y < 10; y += 2) {
     for (let x = -10; x < 10; x += 2) {
-        // translation.x = x / 10.0 + offset;
-        // translation.y = y / 10.0 + offset;
         translations.push(x / 10.0 + offset, y / 10.0 + offset);
     }
 }
