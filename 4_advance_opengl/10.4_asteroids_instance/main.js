@@ -18,16 +18,16 @@ let modelMatrices = [];
 
 
 function updateModel(options) {
-    let {offset,radius,amount} = options;
+    let { offset, radius, amount } = options;
     let len = modelMatrices.length;
-    if (len > amount) {
-        modelMatrices.splice(amount, len - amount);
-        return;
-    }
+    // if (len > amount) {
+    //     modelMatrices.splice(amount, len - amount); // todo
+    //     return;
+    // }
     for (let i = 0; i < amount; i++) {
-        if (modelMatrices[i]) {
-            continue;
-        }
+        // if (modelMatrices[i]) {
+        //     continue;
+        // }
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         // 1. translation: displace along circle with 'radius' in range [-offset, offset]
         let angle = i / amount * 360;
@@ -48,7 +48,39 @@ function updateModel(options) {
         glMatrix.mat4.rotate(model, model, rotAngle, glMatrix.vec3.fromValues(0.4, 0.6, 0.8));
 
         // 4. now add to list of matrices
-        modelMatrices[i] = model;
+        // modelMatrices[i] = model;
+        modelMatrices = modelMatrices.concat([...model]);
+    }
+
+
+
+}
+
+function updateMatrix(gl, model) {
+    let buffer = new Float32Array(modelMatrices);
+    let vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.STATIC_DRAW);
+
+    for (let i = 0; i < model.meshes.length; i++) {
+        let VAO = model.meshes[i].VAO;
+        gl.bindVertexArray(VAO);
+        // set attribute pointers for matrix (4 times vec4)
+        gl.enableVertexAttribArray(3);
+        gl.vertexAttribPointer(3, 4, gl.FLOAT, false, 16 * buffer.BYTES_PER_ELEMENT, 0);
+        gl.enableVertexAttribArray(4);
+        gl.vertexAttribPointer(4, 4, gl.FLOAT, false, 16 * buffer.BYTES_PER_ELEMENT, 4 * buffer.BYTES_PER_ELEMENT);
+        gl.enableVertexAttribArray(5);
+        gl.vertexAttribPointer(5, 4, gl.FLOAT, false, 16 * buffer.BYTES_PER_ELEMENT, 8 * buffer.BYTES_PER_ELEMENT);
+        gl.enableVertexAttribArray(6);
+        gl.vertexAttribPointer(6, 4, gl.FLOAT, false, 16 * buffer.BYTES_PER_ELEMENT, 12 * buffer.BYTES_PER_ELEMENT);
+
+        gl.vertexAttribDivisor(3, 1);
+        gl.vertexAttribDivisor(4, 1);
+        gl.vertexAttribDivisor(5, 1);
+        gl.vertexAttribDivisor(6, 1);
+
+        gl.bindVertexArray(null);
     }
 }
 
@@ -66,9 +98,11 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let shader = new Shader(gl, "shader.vs", "shader.fs");
-    await shader.initialize();
+    let rockShader = new Shader(gl, "rock.vs", "rock.fs");
+    await rockShader.initialize();
 
+    let planetShader = new Shader(gl, "planet.vs", "planet.fs");
+    await planetShader.initialize();
 
     let rockModel = new Model(gl, '../../resources/objects/rock');
     await rockModel.loadModel(['rock.mtl', 'rock.obj'])
@@ -78,6 +112,7 @@ async function main() {
 
     let projection = glMatrix.mat4.create();
     updateModel(rock);
+    updateMatrix(gl, rockModel);
     addGUI();
 
     function render(time) {
@@ -89,27 +124,34 @@ async function main() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 
-        shader.use();
-
         // configure transformation matrices
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(45), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000)
         let view = camera.getViewMatrix();
 
-        shader.setMat4("projection", projection);
-        shader.setMat4("view", view);
+        rockShader.use();
+        rockShader.setMat4("projection", projection);
+        rockShader.setMat4("view", view);
+
+        planetShader.use();
+        planetShader.setMat4("projection", projection);
+        planetShader.setMat4("view", view);
 
         // draw planet
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -3.0, 0.0));
         glMatrix.mat4.scale(model, model, glMatrix.mat4.fromValues(4, 4, 4));
-
-        shader.setMat4("model", model);
-        planetModel.draw(shader);
+        planetShader.setMat4("model", model);
+        planetModel.draw(planetShader);
 
         // draw meteorites
-        for (let i = 0; i < modelMatrices.length; i++) {
-            shader.setMat4("model", modelMatrices[i]);
-            rockModel.draw(shader);
+        rockShader.use();
+        rockShader.setInt("texture_diffuse1", 0);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, rockModel.textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
+        for (let i = 0; i < rockModel.meshes.length; i++) {
+            gl.bindVertexArray(rockModel.meshes[i].VAO);
+            gl.drawElementsInstanced(gl.TRIANGLES, rockModel.meshes[i].indices.length, gl.UNSIGNED_BYTE, 0, rock.amount);
+            gl.bindVertexArray(null);
         }
 
         stats.update();

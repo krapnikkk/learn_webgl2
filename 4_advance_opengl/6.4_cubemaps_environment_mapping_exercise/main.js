@@ -69,7 +69,7 @@ async function main() {
          1.0, -1.0,  1.0
     ]);
 
-    let positionLoc = 0, normalLoc = 1;
+    let positionLoc = 0;
 
 
     let skyboxVAO = gl.createVertexArray();
@@ -197,10 +197,7 @@ async function main() {
         camera.onMouseScroll(e.deltaY / 100);
     }
 
-    function addGUI() {
-        const GUI = new dat.GUI({ name: "skybox" });
-
-    }
+    
 }
 
 

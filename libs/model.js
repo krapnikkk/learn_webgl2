@@ -46,7 +46,7 @@ class Model {
                     // get the result file, and convert to string
                     let resultFile = result.GetFile(0);
                     let scene = JSON.parse(new TextDecoder().decode(resultFile.GetContent()));
-                    console.log(scene);
+                    // console.log(scene);
                     await this.processNode(scene.rootnode, scene);
                     res();
                 });
