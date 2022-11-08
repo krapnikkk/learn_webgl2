@@ -20,14 +20,15 @@ let modelMatrices = [];
 function updateModel(options) {
     let { offset, radius, amount } = options;
     let len = modelMatrices.length;
-    // if (len > amount) {
-    //     modelMatrices.splice(amount, len - amount); // todo
-    //     return;
-    // }
+    let total = amount * 16;
+    if (len > total) {
+        modelMatrices.splice(total, len - total);
+        return;
+    }
     for (let i = 0; i < amount; i++) {
-        // if (modelMatrices[i]) {
-        //     continue;
-        // }
+        if (modelMatrices[i*16]) {
+            continue;
+        }
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         // 1. translation: displace along circle with 'radius' in range [-offset, offset]
         let angle = i / amount * 360;
@@ -150,7 +151,8 @@ async function main() {
         gl.bindTexture(gl.TEXTURE_2D, rockModel.textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
         for (let i = 0; i < rockModel.meshes.length; i++) {
             gl.bindVertexArray(rockModel.meshes[i].VAO);
-            gl.drawElementsInstanced(gl.TRIANGLES, rockModel.meshes[i].indices.length, gl.UNSIGNED_BYTE, 0, rock.amount);
+            let indices = rockModel.meshes[i].indices.length;
+            gl.drawElementsInstanced(gl.TRIANGLES, indices, indices > 256 ? gl.UNSIGNED_SHORT : gl.UNSIGNED_BYTE, 0, rock.amount);
             gl.bindVertexArray(null);
         }
 
@@ -207,7 +209,8 @@ async function main() {
         let rockFolder = GUI.addFolder("rock");
 
         rockFolder.add(rock, "amount", 1000, 50000, 1000).onChange(() => {
-            updateModel(rock)
+            updateModel(rock);
+            updateMatrix(gl,rockModel);
         })
         rockFolder.add(rock, "offset", 1, 25, 1)
         rockFolder.add(rock, "radius", 25, 150, 5)
