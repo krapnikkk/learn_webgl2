@@ -106,19 +106,20 @@ async function main() {
     // configure MSAA framebuffer
     // --------------------------
     let renderFBO = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, renderFBO);
     // create a color attachment texture
-    // let textureColorBufferMultiSampled = gl.createTexture();
-    // gl.bindTexture(gl.TEXTURE_2D, textureColorBufferMultiSampled);
-    // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, textureColorBufferMultiSampled, 0);
-    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
     let rbo = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
+    
+    let textureColorBufferMultiSampled = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, textureColorBufferMultiSampled);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, textureColorBufferMultiSampled, 0);
+    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
     gl.renderbufferStorageMultisample(gl.RENDERBUFFER,4, gl.RGBA8, SCR_WIDTH, SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
     
-    gl.bindFramebuffer(gl.FRAMEBUFFER, renderFBO);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, rbo); // now actually attach it
     // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)

@@ -9,6 +9,11 @@ let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
+let framesbufferFlag = true;
+var framesbuffer = {
+    switch: true
+};
+
 async function main() {
     let stats = new Stats();
     document.body.appendChild(stats.dom);
@@ -106,18 +111,10 @@ async function main() {
     // configure MSAA framebuffer
     // --------------------------
     let renderFBO = gl.createFramebuffer();
-    // create a color attachment texture
-    // let textureColorBufferMultiSampled = gl.createTexture();
-    // gl.bindTexture(gl.TEXTURE_2D, textureColorBufferMultiSampled);
-    // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, textureColorBufferMultiSampled, 0);
-    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
     let rbo = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
-    gl.renderbufferStorageMultisample(gl.RENDERBUFFER,4, gl.RGBA8, SCR_WIDTH, SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
-    
+    gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.RGBA8, SCR_WIDTH, SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, renderFBO);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, rbo); // now actually attach it
     // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
@@ -127,7 +124,7 @@ async function main() {
 
     // configure second post-processing framebuffer
     let colorFBO = gl.createFramebuffer();
-    
+
     // create a color attachment texture
     let screenTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, screenTexture);
@@ -135,10 +132,10 @@ async function main() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.bindTexture(gl.TEXTURE_2D, null);
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, colorFBO);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, screenTexture, 0);
-    
+
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)
         console.log("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -146,17 +143,21 @@ async function main() {
     screenShader.use();
     screenShader.setInt("screenTexture", 0);
 
+    addGUI();
+
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
         lastFrame = currentFrame;
         // pass 1
         // 1. draw scene as normal in multisampled buffers
-        gl.bindFramebuffer(gl.FRAMEBUFFER, renderFBO);
-        // gl.clearColor(0.1, 0.1, 0.1, 1.0);
-        // gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.clearBufferfv(gl.COLOR, 0, [0.1, 0.1, 0.1, 1.0]);
-        // gl.enable(gl.DEPTH_TEST);
+        if (framesbuffer.switch) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, renderFBO);
+            gl.clearBufferfv(gl.COLOR, 0, [0.1, 0.1, 0.1, 1.0]);
+        } else {
+            gl.clearColor(0.1, 0.1, 0.1, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
 
         // set transformation matrices		
         shader.use();
@@ -174,25 +175,24 @@ async function main() {
         gl.bindVertexArray(null);
 
         // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, renderFBO);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, colorFBO);
-        gl.blitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+        if (framesbuffer.switch) {
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, renderFBO);
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, colorFBO);
+            gl.blitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, gl.COLOR_BUFFER_BIT, gl.NEAREST);
 
-        // pass 2
-        // 3. now render quad with scene's visuals as its texture image
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.clearBufferfv(gl.COLOR, 0, [0.1, 0.1, 0.1, 1.0]);
-        
-        screenShader.use();
-        gl.bindVertexArray(quadVAO);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, screenTexture); // use the now resolved color attachment as the quad's texture
-        
-        gl.clearColor(1.0, 1.0, 1.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+            // pass 2
+            // 3. now render quad with scene's visuals as its texture image
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.clearBufferfv(gl.COLOR, 0, [0.1, 0.1, 0.1, 1.0]);
+            screenShader.use();
+            gl.bindVertexArray(quadVAO);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, screenTexture); // use the now resolved color attachment as the quad's texture
+    
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            gl.bindVertexArray(null);
+        }
 
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        gl.bindVertexArray(null);
 
         requestAnimationFrame(render);
     }
@@ -238,6 +238,12 @@ async function main() {
 
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
+    }
+
+
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "framesbuffer" });
+        GUI.add(framesbuffer, "switch").name("MSAA")
     }
 }
 
