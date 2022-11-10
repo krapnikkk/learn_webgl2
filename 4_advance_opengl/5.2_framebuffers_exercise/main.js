@@ -11,8 +11,7 @@ let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
 let framesbufferFlag = true;
 var framesbuffer = {
-    switch: true,
-    line: false
+    type: 0
 };
 async function main() {
     let stats = new Stats();
@@ -145,6 +144,7 @@ async function main() {
 
     screenShader.use();
     screenShader.setInt("screenTexture", 0);
+    screenShader.setInt("type", 0);
 
     // framebuffer configuration
     // -------------------------
@@ -176,9 +176,9 @@ async function main() {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
         lastFrame = currentFrame;
-        if (framesbuffer.switch) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
-        }
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+
         gl.enable(gl.DEPTH_TEST);
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
 
@@ -212,20 +212,20 @@ async function main() {
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindVertexArray(null);
 
-        if (framesbuffer.switch) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.disable(gl.DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
-            // clear all relevant buffers
-            // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
-            gl.clearColor(1.0, 1.0, 1.0, 1.0); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
-            gl.clear(gl.COLOR_BUFFER_BIT);
 
-            screenShader.use();
-            gl.bindVertexArray(quadVAO);
-            gl.bindTexture(gl.TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane
-            gl.drawArrays(framesbuffer.line ? gl.LINES : gl.TRIANGLES, 0, 6);
-            gl.bindVertexArray(null);
-        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.disable(gl.DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+        // clear all relevant buffers
+        // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
+        gl.clearColor(1.0, 1.0, 1.0, 1.0); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        screenShader.use();
+        gl.bindVertexArray(quadVAO);
+        gl.bindTexture(gl.TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.bindVertexArray(null);
+
 
         stats.update();
         requestAnimationFrame(render);
@@ -276,11 +276,16 @@ async function main() {
 
     function addGUI() {
         const GUI = new dat.GUI({ name: "framesbuffer" });
-
-
-        GUI.add(framesbuffer, "switch").name("framesbuffer")
-
-        GUI.add(framesbuffer, "line").name("line")
+        GUI.add(framesbuffer, "type", {
+            "无": 0,
+            "反相": 1,
+            "灰度": 2,
+            "锐化": 3,
+            "模糊": 4,
+            "边缘检测": 5
+        }).name("post-effect").onChange((val) => {
+            screenShader.setInt("type", val);
+        })
     }
 
 }

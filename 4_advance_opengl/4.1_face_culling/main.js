@@ -116,7 +116,6 @@ async function main() {
             switch: true,
             cullFace:gl.BACK,
             frontFace:gl.CW
-
         };
         
         let toggle = GUI.add(cull, "switch").name("enable CULL_FACE").onChange((val)=>{
