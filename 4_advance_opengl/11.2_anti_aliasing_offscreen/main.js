@@ -24,7 +24,7 @@ async function main() {
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
 
-    let screenShader = new Shader(gl, "anti_alias_post.vs", "anti_alias_post.fs");
+    let screenShader = new Shader(gl, "screen.vs", "screen.fs");
     await screenShader.initialize();
 
     let cubeVertices = new Float32Array([
