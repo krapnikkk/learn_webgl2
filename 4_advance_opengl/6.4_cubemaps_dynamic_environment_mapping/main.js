@@ -1,6 +1,6 @@
 let cameraPos = glMatrix.vec3.fromValues(0.0, 4.0, 0.0);
 let camera = new Camera(cameraPos);
-let ratio =1;
+
 
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
@@ -29,92 +29,92 @@ async function main() {
 
     let cubeVertices = new Float32Array([
         // positions          // normals
-        -0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
-         0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
-         0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
-         0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
-        -0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
-        -0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
+        -0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
+        0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
+        0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
+        0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
+        -0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
+        -0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
 
-        -0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
-         0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
-         0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
-         0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
-        -0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
-        -0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
+        0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
+        0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
+        0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
+        -0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
 
-        -0.5,  0.5,  0.5, -1.0,  0.0,  0.0,
-        -0.5,  0.5, -0.5, -1.0,  0.0,  0.0,
-        -0.5, -0.5, -0.5, -1.0,  0.0,  0.0,
-        -0.5, -0.5, -0.5, -1.0,  0.0,  0.0,
-        -0.5, -0.5,  0.5, -1.0,  0.0,  0.0,
-        -0.5,  0.5,  0.5, -1.0,  0.0,  0.0,
+        -0.5, 0.5, 0.5, -1.0, 0.0, 0.0,
+        -0.5, 0.5, -0.5, -1.0, 0.0, 0.0,
+        -0.5, -0.5, -0.5, -1.0, 0.0, 0.0,
+        -0.5, -0.5, -0.5, -1.0, 0.0, 0.0,
+        -0.5, -0.5, 0.5, -1.0, 0.0, 0.0,
+        -0.5, 0.5, 0.5, -1.0, 0.0, 0.0,
 
-         0.5,  0.5,  0.5,  1.0,  0.0,  0.0,
-         0.5,  0.5, -0.5,  1.0,  0.0,  0.0,
-         0.5, -0.5, -0.5,  1.0,  0.0,  0.0,
-         0.5, -0.5, -0.5,  1.0,  0.0,  0.0,
-         0.5, -0.5,  0.5,  1.0,  0.0,  0.0,
-         0.5,  0.5,  0.5,  1.0,  0.0,  0.0,
+        0.5, 0.5, 0.5, 1.0, 0.0, 0.0,
+        0.5, 0.5, -0.5, 1.0, 0.0, 0.0,
+        0.5, -0.5, -0.5, 1.0, 0.0, 0.0,
+        0.5, -0.5, -0.5, 1.0, 0.0, 0.0,
+        0.5, -0.5, 0.5, 1.0, 0.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 0.0, 0.0,
 
-        -0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
-         0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
-         0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
-         0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
-        -0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
-        -0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
+        -0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
+        0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
+        0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
+        0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
+        -0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
+        -0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
 
-        -0.5,  0.5, -0.5,  0.0,  1.0,  0.0,
-         0.5,  0.5, -0.5,  0.0,  1.0,  0.0,
-         0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
-         0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
-        -0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
-        -0.5,  0.5, -0.5,  0.0,  1.0,  0.0
+        -0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
+        0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
+        0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
+        0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
+        -0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
+        -0.5, 0.5, -0.5, 0.0, 1.0, 0.0
     ]);
 
     let skyboxVertices = new Float32Array([
         // positions          
-        -1.0,  1.0, -1.0,
+        -1.0, 1.0, -1.0,
         -1.0, -1.0, -1.0,
-         1.0, -1.0, -1.0,
-         1.0, -1.0, -1.0,
-         1.0,  1.0, -1.0,
-        -1.0,  1.0, -1.0,
+        1.0, -1.0, -1.0,
+        1.0, -1.0, -1.0,
+        1.0, 1.0, -1.0,
+        -1.0, 1.0, -1.0,
 
-        -1.0, -1.0,  1.0,
+        -1.0, -1.0, 1.0,
         -1.0, -1.0, -1.0,
-        -1.0,  1.0, -1.0,
-        -1.0,  1.0, -1.0,
-        -1.0,  1.0,  1.0,
-        -1.0, -1.0,  1.0,
+        -1.0, 1.0, -1.0,
+        -1.0, 1.0, -1.0,
+        -1.0, 1.0, 1.0,
+        -1.0, -1.0, 1.0,
 
-         1.0, -1.0, -1.0,
-         1.0, -1.0,  1.0,
-         1.0,  1.0,  1.0,
-         1.0,  1.0,  1.0,
-         1.0,  1.0, -1.0,
-         1.0, -1.0, -1.0,
+        1.0, -1.0, -1.0,
+        1.0, -1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, -1.0,
+        1.0, -1.0, -1.0,
 
-        -1.0, -1.0,  1.0,
-        -1.0,  1.0,  1.0,
-         1.0,  1.0,  1.0,
-         1.0,  1.0,  1.0,
-         1.0, -1.0,  1.0,
-        -1.0, -1.0,  1.0,
+        -1.0, -1.0, 1.0,
+        -1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, -1.0, 1.0,
+        -1.0, -1.0, 1.0,
 
-        -1.0,  1.0, -1.0,
-         1.0,  1.0, -1.0,
-         1.0,  1.0,  1.0,
-         1.0,  1.0,  1.0,
-        -1.0,  1.0,  1.0,
-        -1.0,  1.0, -1.0,
+        -1.0, 1.0, -1.0,
+        1.0, 1.0, -1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        -1.0, 1.0, 1.0,
+        -1.0, 1.0, -1.0,
 
         -1.0, -1.0, -1.0,
-        -1.0, -1.0,  1.0,
-         1.0, -1.0, -1.0,
-         1.0, -1.0, -1.0,
-        -1.0, -1.0,  1.0,
-         1.0, -1.0,  1.0
+        -1.0, -1.0, 1.0,
+        1.0, -1.0, -1.0,
+        1.0, -1.0, -1.0,
+        -1.0, -1.0, 1.0,
+        1.0, -1.0, 1.0
     ]);
 
     let positionLoc = 0, normalLoc = 1;
@@ -152,35 +152,74 @@ async function main() {
         "../../resources/skybox/front.jpg",
         "../../resources/skybox/back.jpg"
     ];
-    let cubemapTexture = await loadCubemap(gl,faces);
+    let cubemapTexture = await loadCubemap(gl, faces);
 
     let modelShader = new Shader(gl, "model.vs", "model.fs");
     await modelShader.initialize();
-    
+
     modelShader.use();
     modelShader.setInt("skybox", 0);
 
     let modelObj = new Model(gl, '../../resources/objects/planet');
     await modelObj.loadModel(['planet.mtl', 'planet.obj'])
-    addGUI();
+
+    /*创建一个天空盒，并将其6个面的纹理附加到6个帧缓冲*/
+    let framebuffertex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, framebuffertex);
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    for (let i = 0; i < 6; i++)    //对cubeMap每一个面分配内存
+        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, 2048, 2048, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    let framebuffers = [];
+    for (let i = 0; i < 6; i++) {
+        let framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, framebuffertex, 0);
+
+        let rbo = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, 2048, 2048);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rbo);
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)
+            console.log("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+        framebuffers.push(framebuffer);
+    }
+
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
         lastFrame = currentFrame;
 
+        for (let i = 0; i < 6; i++) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers[i]);
+        }
+
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        gl.bindVertexArray(skyboxVAO);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
         cubemapsShader.use();
-        cubemapsShader.setFloat("ratio",ratio);
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0,1,0));
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0, 0, -10));
         glMatrix.mat4.rotate(model, model, time / 5000, glMatrix.vec3.fromValues(0.5, 1.0, 0.0));
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-        
+
         cubemapsShader.setMat4("model", model);
         cubemapsShader.setMat4("view", view);
         cubemapsShader.setMat4("projection", projection);
@@ -195,10 +234,9 @@ async function main() {
 
         // model
         modelShader.use();
-        modelShader.setFloat("ratio",ratio);
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0,0,-10));
-        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5,0.5,0.5));
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0, 0, -15));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
         modelShader.setMat4("projection", projection);
         modelShader.setMat4("view", view);
         modelShader.setVec3("cameraPos", camera.position);
@@ -221,6 +259,7 @@ async function main() {
         gl.bindVertexArray(skyboxVAO);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
         gl.depthFunc(gl.LESS); // set depth function back to default
@@ -272,32 +311,6 @@ async function main() {
         camera.onMouseScroll(e.deltaY / 100);
     }
 
-    function addGUI() {
-        const GUI = new dat.GUI({ name: "refraction" });
-        let materialFloder = GUI.addFolder("material");
-        const materialList = {
-            "空气":1.00,
-            "水":1.33,
-            "冰":1.309,
-            "玻璃":1.52,
-            "钻石":2.42
-        };
-        const material = {
-            inside:1.00,
-            outside:1.33,
-            fn:function(){
-                ratio = this.inside/this.outside
-            }
-        }
-        materialFloder.add(material,"inside",materialList).name("inside").onChange((val)=>{
-            material.inside = val;
-        })
-        materialFloder.add(material,"outside",materialList).name("outside").onChange((val)=>{
-            material.outside = val;
-        })
-        materialFloder.add(material,"fn").name("run")
-
-    }
 }
 
 async function loadTexture(gl, url) {
@@ -335,7 +348,7 @@ async function loadCubemap(gl, urls) {
     return new Promise(async (resolve, reject) => {
         let texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-        for(let i = 0;i<urls.length;i++){
+        for (let i = 0; i < urls.length; i++) {
             let url = urls[i];
             let image = await IJS.Image.load(url);
             let { width, height, data, channels } = image;
@@ -348,7 +361,7 @@ async function loadCubemap(gl, urls) {
                 else if (channels == 4)
                     format = gl.RGBA;
                 gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
-    
+
             } else {
                 reject()
                 console.warn("Texture failed to load at path: " + url);

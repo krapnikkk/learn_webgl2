@@ -14,16 +14,11 @@ uniform sampler2D texture_ambient1;
 uniform vec3 cameraPos;
 
 uniform samplerCube skybox;
-uniform float ratio;
 
 void main() {
-    // vec3 viewDir = normalize(cameraPos - FragPos);
-    // vec3 normal = normalize(Normal);
-    // vec3 R = reflect(-viewDir, normal);
-
-    // float ratio = 1.00 / 1.52;
-    vec3 I = normalize(FragPos - cameraPos);
-    vec3 R = refract(I, normalize(Normal), ratio);
+    vec3 viewDir = normalize(cameraPos - FragPos);
+    vec3 normal = normalize(Normal);
+    vec3 R = reflect(-viewDir, normal);
     
     FragColor = texture(skybox, R);
 }
