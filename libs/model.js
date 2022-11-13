@@ -20,7 +20,7 @@ class Model {
             this.meshes[i].draw(shader);
     }
 
-    async loadModel(files,format='assjson') {
+    async loadModel(files, format = 'assjson') {
         return new Promise((res, rej) => {
             assimpjs().then((ajs) => {
                 // fetch the files to import
@@ -73,7 +73,14 @@ class Model {
         let indices = [];
         let textures = [];
         for (let i = 0; i < mesh.vertices.length / 3; i++) {
-            vertices.push(mesh.vertices[i * 3], mesh.vertices[i * 3 + 1], mesh.vertices[i * 3 + 2])
+            let x = mesh.vertices[i * 3], y = mesh.vertices[i * 3 + 1], z = mesh.vertices[i * 3 + 2];
+            vertices.push(x, y, z);
+            if (x < this.minX) this.minX = x;
+            if (x >= this.maxX) this.maxX = x;
+            if (y < this.minY) this.minY = y;
+            if (y >= this.maxY) this.maxY = y;
+            if (z < this.minZ) this.minZ = z;
+            if (z >= this.maxZ) this.maxZ = z;
             if (mesh.normals.length > 0) {
                 vertices.push(mesh.normals[i * 3], mesh.normals[i * 3 + 1], mesh.normals[i * 3 + 2])
             } else {
@@ -176,7 +183,7 @@ class Model {
         let textureID = this.gl.createTexture();
 
         let image = await IJS.Image.load(filename);
-        let { width, height,data,channels } = image;
+        let { width, height, data, channels } = image;
         if (data) {
             let format;
             if (channels == 1)
