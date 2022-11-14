@@ -130,8 +130,8 @@ async function main() {
         modelShader.setMat4("model", model);
         // obj
         obj.draw(modelShader);
-        gl.activeTexture(gl.TEXTURE4);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+        // gl.activeTexture(gl.TEXTURE4);
+        // gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 
         // draw skybox as last
         gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content

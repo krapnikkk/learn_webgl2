@@ -123,7 +123,7 @@ async function main() {
 
     let cubeTexture = await loadTexture(gl, "../../resources/textures/container.jpg");
     cubemapsShader.use();
-    cubemapsShader.setInt("texture1",0)
+    cubemapsShader.setInt("texture1", 0);
 
     gl.bindVertexArray(cubeVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
@@ -179,10 +179,10 @@ async function main() {
         gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, 2048, 2048, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
     // let framebuffer = [];
-    // for (let i = 0; i < 6; i++) {
     let framebuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, framebufferTex, 0);
+    for (let i = 0; i < 6; i++) 
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, framebufferTex, 0);
 
     let rbo = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
@@ -195,11 +195,10 @@ async function main() {
     //     framebuffers.push(framebuffer);
     // }
 
-    let insideCameraPos = glMatrix.vec3.create();
-    insideCameraPos.x = (modelObj.minX + modelObj.maxX) / 2.0;
-    insideCameraPos.y = (modelObj.minY + modelObj.maxY) / 2.0;
-    insideCameraPos.z = (modelObj.minZ + modelObj.maxZ) / 2.0;
-    debugger
+    let x = (modelObj.minX + modelObj.maxX) / 2.0;
+    let y = (modelObj.minY + modelObj.maxY) / 2.0;
+    let z = (modelObj.minZ + modelObj.maxZ) / 2.0;
+    let insideCameraPos = glMatrix.vec3.create(x,y,z);
     let cameraList = [
         new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), 0.0, 0.0),
         new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -180.0, 0.0),
@@ -218,8 +217,9 @@ async function main() {
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
 
+        let buffers = [];
         for (let i = 0; i < 6; i++) {
-            let curCamera = cameraListp[i];
+            let curCamera = cameraList[i];
             glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(curCamera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
             view = curCamera.getViewMatrix();
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
@@ -233,7 +233,13 @@ async function main() {
             cubemapsShader.setMat4("model", model);
             cubemapsShader.setMat4("view", view);
             cubemapsShader.setMat4("projection", projection);
-            cubemapsShader.setVec3("cameraPos", camera.position);
+
+            // cubes
+            gl.bindVertexArray(cubeVAO);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
+            gl.drawArrays(gl.TRIANGLES, 0, 36);
+            gl.bindVertexArray(null);
 
             modelShader.use();
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
@@ -243,6 +249,10 @@ async function main() {
             modelShader.setMat4("view", view);
             modelShader.setVec3("cameraPos", camera.position);
             modelShader.setMat4("model", model);
+            // model
+            modelObj.draw(modelShader);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 
             skyboxShader.use();
             // remove translation from the view matrix
@@ -252,23 +262,12 @@ async function main() {
             skyboxShader.setMat4("projection", projection);
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-            gl.drawBuffer(gl.COLOR_ATTACHMENT0 + i);
+            buffers.push(gl.COLOR_ATTACHMENT0 + i);
+            gl.drawBuffers(buffers);
 
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             gl.enable(gl.DEPTH_TEST);
-
-            // cubes
-            gl.bindVertexArray(cubeVAO);
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
-            gl.drawArrays(gl.TRIANGLES, 0, 36);
-            gl.bindVertexArray(null);
-
-            // model
-            modelObj.draw(modelShader);
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 
             // sky box
             gl.depthFunc(gl.LEQUAL);
@@ -282,108 +281,8 @@ async function main() {
         }
 
         // render final scene
-        model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        view = camera.getViewMatrix();
-        projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-
-
-        texShader.use();
-        texShader.setMat4("projection", glm:: value_ptr(projection));
-        texShader.setMat4("view", glm:: value_ptr(view));
-        texShader.setMat4("model", glm:: value_ptr(model));
-        texShader.setVec3("viewPos", camera.Position.x, camera.Position.y, camera.Position.z);
-
-        noTexShader.use();
-        noTexShader.setMat4("projection", glm:: value_ptr(projection));
-        noTexShader.setMat4("view", glm:: value_ptr(view));
-        noTexShader.setMat4("model", glm:: value_ptr(model));
-        noTexShader.setVec3("viewPos", camera.Position.x, camera.Position.y, camera.Position.z);
-
-        skyboxShader.use();
-        skyboxShader.setMat4("projection", glm:: value_ptr(projection));
-        glm::mat4 skyboxView = glm:: mat4(glm:: mat3(camera.GetViewMatrix()));
-        skyboxShader.setMat4("view", glm:: value_ptr(skyboxView));
-
-        environmentShader.use();
-        environmentShader.setMat4("projection", glm:: value_ptr(projection));
-        environmentShader.setMat4("view", glm:: value_ptr(view));
-        environmentShader.setMat4("model", glm:: value_ptr(model));
-        environmentShader.setVec3("cameraPos", camera.Position.x, camera.Position.y, camera.Position.z);
-        environmentShader.setInt("skybox", 0);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-
-        // draw box on the right
-        texShader.use();
-        model = glm:: mat4();
-        model = glm:: scale(model, glm:: vec3(2.0f));
-        model = glm:: translate(model, glm:: vec3(3.0f, 1.0f, 0.0f));
-        texShader.setMat4("model", glm:: value_ptr(model));
-        glBindVertexArray(VAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, diffuseMap);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, specularMap);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        // draw bunny on the left
-        noTexShader.use();
-        model = glm:: mat4();
-        model = glm:: translate(model, glm:: vec3(-5.0f, 0.0f, 0.0f));
-        noTexShader.setMat4("model", glm:: value_ptr(model));
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        bunny.Draw(noTexShader);
-
-        // draw the helicopter
-        model = glm:: mat4();
-		float y = 10 * sin(currentFrame);
-		float z = 10 * cos(currentFrame);
-        model = glm:: translate(model, glm:: vec3(0.0f, y, z));
-        model = glm:: rotate(model, glm:: radians(-90.0f), glm:: vec3(0.0f, 1.0f, 0.0f));
-        noTexShader.setMat4("model", glm:: value_ptr(model));
-        plane.Draw(noTexShader);
-        glDisable(GL_CULL_FACE);
-
-        // dynamic environment mapped bunny
-        glEnable(GL_CULL_FACE);
-        environmentShader.use();
-        model = glm:: mat4();
-        environmentShader.setMat4("model", glm:: value_ptr(model));
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeBuffer);
-        bunny.Draw(environmentShader);
-        glDisable(GL_CULL_FACE);
-
-        // sky box
-        glDepthFunc(GL_LEQUAL);
-        glDepthMask(GL_FALSE);
-        skyboxShader.use();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.m_textureID);
-        skybox.Draw(skyboxShader);
-        glDepthMask(GL_TRUE);
-        glDepthFunc(GL_LESS);
-        glDisable(GL_DEPTH_TEST);
-
-        // text rendering
-
-        glDisable(GL_BLEND);
-
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        gl.bindVertexArray(skyboxVAO);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
-
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         cubemapsShader.use();
 
@@ -394,12 +293,11 @@ async function main() {
         cubemapsShader.setMat4("model", model);
         cubemapsShader.setMat4("view", view);
         cubemapsShader.setMat4("projection", projection);
-        cubemapsShader.setVec3("cameraPos", camera.position);
 
         // cubes
         gl.bindVertexArray(cubeVAO);
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
 
@@ -415,21 +313,21 @@ async function main() {
 
         modelObj.draw(modelShader);
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, framebufferTex);
 
         // draw skybox as last
         gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
+        // remove translation from the view matrix
         view = camera.getViewMatrix();
-        view[12] = view[13] = view[14] = 0.0; // remove translation from the view matrix
+        view[12] = view[13] = view[14] = 0.0;
         skyboxShader.setMat4("view", view);
         skyboxShader.setMat4("projection", projection);
 
         // skybox cube
         gl.bindVertexArray(skyboxVAO);
-        gl.activeTexture(gl.TEXTURE0);
+        gl.activeTexture(gl.TEXTURE4);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
-
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
         gl.depthFunc(gl.LESS); // set depth function back to default
