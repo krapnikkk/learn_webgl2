@@ -26,49 +26,52 @@ async function main() {
     let cubemapsShader = new Shader(gl, "cubemaps.vs", "cubemaps.fs");
     await cubemapsShader.initialize();
 
+    let environmentShader = new Shader(gl, "environment.vs", "environment.fs");
+    await environmentShader.initialize();
+
     let cubeVertices = new Float32Array([
-        // positions          // normals
-        -0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
-        0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
-        0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
-        0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
-        -0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
-        -0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
+        // positions          // texture Coords
+        -0.5, -0.5, -0.5, 0.0, 0.0,
+        0.5, -0.5, -0.5, 1.0, 0.0,
+        0.5, 0.5, -0.5, 1.0, 1.0,
+        0.5, 0.5, -0.5, 1.0, 1.0,
+        -0.5, 0.5, -0.5, 0.0, 1.0,
+        -0.5, -0.5, -0.5, 0.0, 0.0,
 
-        -0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
-        0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
-        0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
-        0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
-        -0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
-        -0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0,
+        0.5, -0.5, 0.5, 1.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 1.0,
+        0.5, 0.5, 0.5, 1.0, 1.0,
+        -0.5, 0.5, 0.5, 0.0, 1.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0,
 
-        -0.5, 0.5, 0.5, -1.0, 0.0, 0.0,
-        -0.5, 0.5, -0.5, -1.0, 0.0, 0.0,
-        -0.5, -0.5, -0.5, -1.0, 0.0, 0.0,
-        -0.5, -0.5, -0.5, -1.0, 0.0, 0.0,
-        -0.5, -0.5, 0.5, -1.0, 0.0, 0.0,
-        -0.5, 0.5, 0.5, -1.0, 0.0, 0.0,
+        -0.5, 0.5, 0.5, 1.0, 0.0,
+        -0.5, 0.5, -0.5, 1.0, 1.0,
+        -0.5, -0.5, -0.5, 0.0, 1.0,
+        -0.5, -0.5, -0.5, 0.0, 1.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0,
+        -0.5, 0.5, 0.5, 1.0, 0.0,
 
-        0.5, 0.5, 0.5, 1.0, 0.0, 0.0,
-        0.5, 0.5, -0.5, 1.0, 0.0, 0.0,
-        0.5, -0.5, -0.5, 1.0, 0.0, 0.0,
-        0.5, -0.5, -0.5, 1.0, 0.0, 0.0,
-        0.5, -0.5, 0.5, 1.0, 0.0, 0.0,
-        0.5, 0.5, 0.5, 1.0, 0.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 0.0,
+        0.5, 0.5, -0.5, 1.0, 1.0,
+        0.5, -0.5, -0.5, 0.0, 1.0,
+        0.5, -0.5, -0.5, 0.0, 1.0,
+        0.5, -0.5, 0.5, 0.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 0.0,
 
-        -0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
-        0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
-        0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
-        0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
-        -0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
-        -0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
+        -0.5, -0.5, -0.5, 0.0, 1.0,
+        0.5, -0.5, -0.5, 1.0, 1.0,
+        0.5, -0.5, 0.5, 1.0, 0.0,
+        0.5, -0.5, 0.5, 1.0, 0.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0,
+        -0.5, -0.5, -0.5, 0.0, 1.0,
 
-        -0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
-        0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
-        0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
-        0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
-        -0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
-        -0.5, 0.5, -0.5, 0.0, 1.0, 0.0
+        -0.5, 0.5, -0.5, 0.0, 1.0,
+        0.5, 0.5, -0.5, 1.0, 1.0,
+        0.5, 0.5, 0.5, 1.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 0.0,
+        -0.5, 0.5, 0.5, 0.0, 0.0,
+        -0.5, 0.5, -0.5, 0.0, 1.0
     ]);
 
     let skyboxVertices = new Float32Array([
@@ -116,7 +119,7 @@ async function main() {
         1.0, -1.0, 1.0
     ]);
 
-    let positionLoc = 0, normalLoc = 1;
+    let positionLoc = 0, texCoordLoc = 1;
 
     let cubeVAO = gl.createVertexArray();
     let cubeVBO = gl.createBuffer();
@@ -128,10 +131,10 @@ async function main() {
     gl.bindVertexArray(cubeVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
     gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 6 * cubeVertices.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * cubeVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 6 * cubeVertices.BYTES_PER_ELEMENT, 3 * cubeVertices.BYTES_PER_ELEMENT);
-    gl.enableVertexAttribArray(normalLoc);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * cubeVertices.BYTES_PER_ELEMENT, 3 * cubeVertices.BYTES_PER_ELEMENT);
+    gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
     let skyboxVAO = gl.createVertexArray();
@@ -160,9 +163,6 @@ async function main() {
     let modelShader = new Shader(gl, "model.vs", "model.fs");
     await modelShader.initialize();
 
-    modelShader.use();
-    modelShader.setInt("skybox", 0);
-
     let modelObj = new Model(gl, '../../resources/objects/planet');
     await modelObj.loadModel(['planet.mtl', 'planet.obj'])
 
@@ -181,24 +181,24 @@ async function main() {
     // let framebuffer = [];
     let framebuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    for (let i = 0; i < 6; i++) 
+    for (let i = 0; i < 6; i++)
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, framebufferTex, 0);
 
     let rbo = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, 2048, 2048);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rbo);
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)
         console.log("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     //     framebuffers.push(framebuffer);
     // }
 
     let x = (modelObj.minX + modelObj.maxX) / 2.0;
     let y = (modelObj.minY + modelObj.maxY) / 2.0;
     let z = (modelObj.minZ + modelObj.maxZ) / 2.0;
-    let insideCameraPos = glMatrix.vec3.create(x,y,z);
+    let insideCameraPos = glMatrix.vec3.create(x, y, z);
     let cameraList = [
         new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), 0.0, 0.0),
         new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -180.0, 0.0),
@@ -213,15 +213,26 @@ async function main() {
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
         lastFrame = currentFrame;
 
-        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        let view = camera.getViewMatrix();
-        let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+        let model;
+        let view;
+        let projection;
 
         let buffers = [];
+
         for (let i = 0; i < 6; i++) {
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.enable(gl.DEPTH_TEST);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+            buffers.push(gl.COLOR_ATTACHMENT0 + i);
+            gl.drawBuffers(buffers);
+
+            
             let curCamera = cameraList[i];
-            glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(curCamera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
             view = curCamera.getViewMatrix();
+            projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+            glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(curCamera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
 
             cubemapsShader.use();
@@ -241,18 +252,15 @@ async function main() {
             gl.drawArrays(gl.TRIANGLES, 0, 36);
             gl.bindVertexArray(null);
 
+            // model
             modelShader.use();
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
             glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0, 0, -15));
             glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
             modelShader.setMat4("projection", projection);
             modelShader.setMat4("view", view);
-            modelShader.setVec3("cameraPos", camera.position);
             modelShader.setMat4("model", model);
-            // model
             modelObj.draw(modelShader);
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 
             skyboxShader.use();
             // remove translation from the view matrix
@@ -261,13 +269,6 @@ async function main() {
             skyboxShader.setMat4("view", view);
             skyboxShader.setMat4("projection", projection);
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-            buffers.push(gl.COLOR_ATTACHMENT0 + i);
-            gl.drawBuffers(buffers);
-
-            gl.clearColor(0.0, 0.0, 0.0, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.enable(gl.DEPTH_TEST);
 
             // sky box
             gl.depthFunc(gl.LEQUAL);
@@ -281,11 +282,17 @@ async function main() {
         }
 
         // render final scene
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
 
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        view = camera.getViewMatrix();
+        projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+
+        // cubes
         cubemapsShader.use();
-
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0, 0, -10));
         glMatrix.mat4.rotate(model, model, time / 5000, glMatrix.vec3.fromValues(0.5, 1.0, 0.0));
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
@@ -294,43 +301,42 @@ async function main() {
         cubemapsShader.setMat4("view", view);
         cubemapsShader.setMat4("projection", projection);
 
-        // cubes
         gl.bindVertexArray(cubeVAO);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
 
-        // model
-        modelShader.use();
+        // dynamic environment mapped
+        environmentShader.use();
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0, 0, -15));
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
-        modelShader.setMat4("projection", projection);
-        modelShader.setMat4("view", view);
-        modelShader.setVec3("cameraPos", camera.position);
-        modelShader.setMat4("model", model);
+        environmentShader.setMat4("projection", projection);
+        environmentShader.setMat4("view", view);
+        environmentShader.setVec3("cameraPos", camera.position);
+        environmentShader.setMat4("model", model);
+        environmentShader.setInt("skybox", 0);
 
-        modelObj.draw(modelShader);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, framebufferTex);
+        modelObj.draw(environmentShader);
 
         // draw skybox as last
         gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
-        // remove translation from the view matrix
         view = camera.getViewMatrix();
         view[12] = view[13] = view[14] = 0.0;
         skyboxShader.setMat4("view", view);
         skyboxShader.setMat4("projection", projection);
 
-        // skybox cube
         gl.bindVertexArray(skyboxVAO);
         gl.activeTexture(gl.TEXTURE4);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
         gl.depthFunc(gl.LESS); // set depth function back to default
+        gl.disable(gl.DEPTH_TEST);
 
         stats.update();
         requestAnimationFrame(render);
