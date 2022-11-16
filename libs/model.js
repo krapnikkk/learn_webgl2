@@ -12,7 +12,12 @@ class Model {
         this.gl = gl;
         this.gammaCorrection = gamma;
         this.directory = directory;
-
+        this.minX = Number.MAX_SAFE_INTEGER;
+        this.minY = Number.MAX_SAFE_INTEGER;
+        this.minZ = Number.MAX_SAFE_INTEGER;
+        this.maxX = Number.MIN_SAFE_INTEGER;
+        this.maxY = Number.MIN_SAFE_INTEGER;
+        this.maxZ = Number.MIN_SAFE_INTEGER;
     }
 
     draw(shader) {
@@ -86,7 +91,7 @@ class Model {
             } else {
                 vertices.push(0, 0, 0)
             }
-            if (mesh.texturecoords[0]) {
+            if (mesh.texturecoords && mesh.texturecoords[0]) {
                 vertices.push(mesh.texturecoords[0][i * 2], mesh.texturecoords[0][i * 2 + 1])
                 mesh.tangents ? vertices.push(mesh.tangents[i * 3], mesh.tangents[i * 3 + 1], mesh.tangents[i * 3 + 2]) : vertices.push(0, 0, 0);
                 mesh.bitangent ? vertices.push(mesh.bitangent[i * 3], mesh.bitangent[i * 3 + 1], mesh.bitangent[i * 3 + 2]) : vertices.push(0, 0, 0);
