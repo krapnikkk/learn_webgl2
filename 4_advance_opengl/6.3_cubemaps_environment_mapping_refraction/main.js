@@ -160,8 +160,8 @@ async function main() {
     modelShader.use();
     modelShader.setInt("skybox", 0);
 
-    let modelObj = new Model(gl, '../../resources/objects/nanosuit');
-    await modelObj.loadModel(['nanosuit.mtl', 'nanosuit.obj'])
+    let modelObj = new Model(gl, '../../resources/objects/planet');
+    await modelObj.loadModel(['planet.mtl', 'planet.obj'])
     addGUI();
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
