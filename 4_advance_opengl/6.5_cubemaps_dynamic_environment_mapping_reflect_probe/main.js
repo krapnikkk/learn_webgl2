@@ -1,5 +1,5 @@
 let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, -6.0);
-let camera = new Camera(cameraPos,glMatrix.vec3.fromValues(0.0, 1.0, 0.0), 90.0, 0.0);
+let camera = new Camera(cameraPos, glMatrix.vec3.fromValues(0.0, 1.0, 0.0), 90.0, 0.0);
 let idx = 0;
 
 const SCR_WIDTH = 800;
@@ -167,156 +167,89 @@ async function main() {
     await modelShader.initialize();
 
     let modelObj = new Model(gl, '../../resources/objects/planet');
-    await modelObj.loadModel(['planet.obj','planet.mtl'])
-
-    /*创建一个天空盒，并将其6个面的纹理附加到6个帧缓冲*/
-    let framebufferTex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, framebufferTex);
-
-
-    for (let i = 0; i < 6; i++)    //对cubeMap每一个面分配内存
-        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, 800, 800, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    let framebuffers = [];
-    for (let i = 0; i < 6; i++) {
-        let framebuffer = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, framebufferTex, 0);
-
-        let rbo = gl.createRenderbuffer();
-        gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, 800, 800);
-        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rbo);
-        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)
-            console.log("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
-    
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        framebuffers.push(framebuffer);
-    }
+    await modelObj.loadModel(['planet.obj', 'planet.mtl'])
 
     let x = (modelObj.minX + modelObj.maxX) / 2.0;
     let y = (modelObj.minY + modelObj.maxY) / 2.0;
     let z = (modelObj.minZ + modelObj.maxZ) / 2.0;
     let insideCameraPos = glMatrix.vec3.fromValues(x, y, z);
-    let cameraList = [
-        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), 0.0, 0.0),
-        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -180.0, 0.0),
-        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -90.0, 90.0),
-        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -90.0, -90.0),
-        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), 90.0, 0.0),
-        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -90.0, 0.0)
-    ];
+    let probe = new ReflectProbe(gl, 1024, insideCameraPos);
 
-    function render(time) {
-        let currentFrame = Math.round(time) / 1000;
-        deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
-        lastFrame = currentFrame;
+    function drawScene(view, projection, cameraPos, reflectProbe) {
+        gl.enable(gl.DEPTH_TEST);
+        gl.clearColor(0.1, 0.1, 0.1, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        let model;
-        let view;
-        let projection;
+        // 渲染模型
+        modelShader.use();
 
-        for (let i = 0; i < 6; i++) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers[i]);
-            gl.clearColor(0.0, 0.0, 0.0, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            let curCamera = cameraList[i];
-            view = curCamera.getViewMatrix();
-            projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-            glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(curCamera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000)
-            model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        modelShader.setMat4("model", model);
+        modelShader.setMat4("view", view);
+        modelShader.setMat4("projection", projection);
 
+        modelShader.setVec3("cameraPos", cameraPos); // 传入相机的位置
+        // modelShader.setVec3("light.direction", 0.0f, 0.0f, 1.0f);     // 为了好看点 这里加了一簇光在前面，跟天空盒的太阳不太一样
+        modelShader.setInt("skybox", 4); // 注意修改纹理单元
+
+        // 模型中部分mesh只有3个纹理
+        // 模型加载器本身就已经在着色器中占用了4个纹理单元了，需要将天空盒绑定到第4个纹理单元上
+        gl.activeTexture(gl.TEXTURE0 + 4);  // ourModel
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+        modelObj.draw(modelShader);
+
+
+        if (reflectProbe) {
             cubemapsShader.use();
-
-            glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0, 3, -2));
-
+            model = glMatrix.mat4.identity(glMatrix.mat4.create());
             cubemapsShader.setMat4("model", model);
             cubemapsShader.setMat4("view", view);
             cubemapsShader.setMat4("projection", projection);
-
+            cubemapsShader.setVec3("cameraPos", cameraPos); // 传入相机的位置
+            cubemapsShader.setInt("skybox", 0);
             // cubes
             gl.bindVertexArray(cubeVAO);
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
+            //gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, reflectProbe);// 使用动态环境映射纹理 (这里纹理不包含二次反射，自己不会再别人的反射上)
             gl.drawArrays(gl.TRIANGLES, 0, 36);
             gl.bindVertexArray(null);
-
-
-
-            gl.depthFunc(gl.LEQUAL);
-            skyboxShader.use();
-            // remove translation from the view matrix
-            view = curCamera.getViewMatrix();
-            view[12] = view[13] = view[14] = 0.0;
-            skyboxShader.setMat4("view", view);
-            skyboxShader.setMat4("projection", projection);
-
-
-            gl.bindVertexArray(skyboxVAO);
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
-            gl.drawArrays(gl.TRIANGLES, 0, 36);
-            gl.bindVertexArray(null);
-            gl.depthFunc(gl.LESS);
         }
 
-        // render final scene
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.clearColor(0.1, 0.1, 0.1, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.enable(gl.DEPTH_TEST);
-
-        model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        view = camera.getViewMatrix();
-        projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-
-        // cube
-        cubemapsShader.use();
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(1, 1.5, -1.5));
-        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000)
-
-        cubemapsShader.setMat4("model", model);
-        cubemapsShader.setMat4("view", view);
-        cubemapsShader.setMat4("projection", projection);
-
-        gl.bindVertexArray(cubeVAO);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
-        gl.bindVertexArray(null);
-
-        // dynamic environment mapped
-        environmentShader.use();
-        model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        environmentShader.setMat4("projection", projection);
-        environmentShader.setMat4("view", view);
-        environmentShader.setVec3("cameraPos", camera.position);
-        environmentShader.setMat4("model", model);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, framebufferTex);
-        modelObj.draw(environmentShader);
-
-        // draw skybox as last
+        // 最后渲染天空盒
         gl.depthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
-        view = camera.getViewMatrix();
+        // 没有 model
         view[12] = view[13] = view[14] = 0.0;
-        skyboxShader.setMat4("view", view);
+        skyboxShader.setMat4("view", view);// 天空盒把view矩阵的位移去掉
         skyboxShader.setMat4("projection", projection);
-
+        skyboxShader.setInt("skybox", 0);
+        // skybox cube
         gl.bindVertexArray(skyboxVAO);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
         gl.depthFunc(gl.LESS); // set depth function back to default
+
+    }
+
+    function render(time) {
+        let currentFrame = Math.round(time) / 1000;
+        deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
+        lastFrame = currentFrame;
+
+        probe.drawSceneToCubemap(drawScene);
+
+        let newCubemapTexture = probe.getReflectProbeTexture();
+
+        let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000)
+
+        let view = camera.getViewMatrix();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+        drawScene(view, projection, camera.position, newCubemapTexture);
 
         stats.update();
         requestAnimationFrame(render);
@@ -415,7 +348,7 @@ async function loadCubemap(gl, urls) {
                 else if (channels == 4)
                     format = gl.RGBA;
                 gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
-                
+
             } else {
                 reject()
                 console.warn("Texture failed to load at path: " + url);

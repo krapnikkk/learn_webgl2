@@ -203,8 +203,8 @@ async function main() {
     let cameraList = [
         new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), 0.0, 0.0),
         new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -180.0, 0.0),
-        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -90.0, 90.0),
-        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -90.0, -90.0),
+        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, 1.0, 0.0), -90.0, 90.0),
+        new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, 1.0, 0.0), -90.0, -90.0),
         new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), 90.0, 0.0),
         new Camera(insideCameraPos, glMatrix.vec3.fromValues(0.0, -1.0, 0.0), -90.0, 0.0)
     ];
@@ -226,18 +226,18 @@ async function main() {
             // camera = curCamera;
             view = curCamera.getViewMatrix();
             projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-            glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(curCamera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000)
+            glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(90), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000)
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
 
             cubemapsShader.use();
 
             glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0, 3, -2));
 
+            // cubes
             cubemapsShader.setMat4("model", model);
             cubemapsShader.setMat4("view", view);
             cubemapsShader.setMat4("projection", projection);
 
-            // cubes
             gl.bindVertexArray(cubeVAO);
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
