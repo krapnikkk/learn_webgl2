@@ -1,5 +1,21 @@
+const s_Fronts = [
+    glMatrix.vec3.fromValues(1.0, 0.0, 0.0),
+    glMatrix.vec3.fromValues(-1.0, 0.0, 0.0),
+    glMatrix.vec3.fromValues(0.0, 1.0, 0.0),
+    glMatrix.vec3.fromValues(0.0, -1.0, 0.0),
+    glMatrix.vec3.fromValues(0.0, 0.0, 1.0),
+    glMatrix.vec3.fromValues(0.0, 0.0, -1.0)
+];
+const s_Ups = [
+    glMatrix.vec3.fromValues(0.0, -1.0, 0.0), // right
+    glMatrix.vec3.fromValues(0.0, -1.0, 0.0), // left
+    glMatrix.vec3.fromValues(0.0, 0.0, 1.0),  // bottom
+    glMatrix.vec3.fromValues(0.0, 0.0, -1.0), // top
+    glMatrix.vec3.fromValues(0.0, -1.0, 0.0), // back
+    glMatrix.vec3.fromValues(0.0, -1.0, 0.0) // front
+];
 class ReflectProbe {
-    constructor(gl, textureSize,position) {
+    constructor(gl, textureSize, position) {
         this.gl = gl;
         this.fboSize = textureSize;
 
@@ -43,30 +59,14 @@ class ReflectProbe {
 
     drawSceneToCubemap(drawSceneFunc) {
 
-        this.gl.viewport(0, 0, this.fboSize , this.fboSize );
+        this.gl.viewport(0, 0, this.fboSize, this.fboSize);
 
-        let radio = this.fboSize  / this.fboSize ; // == 1.0
+        let radio = this.fboSize / this.fboSize; // == 1.0
         let fov = 90;    // 90.0度
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(fov), radio, 0.1, 100)
 
-        // 按照世界坐标系(右手) 跟cubemap左手不同
-        let s_Fronts = [
-            glMatrix.vec3.fromValues(1.0, 0.0, 0.0),
-            glMatrix.vec3.fromValues(- 1.0, 0.0, 0.0),
-            glMatrix.vec3.fromValues(0.0, 1.0, 0.0),
-            glMatrix.vec3.fromValues(0.0, -1.0, 0.0),
-            glMatrix.vec3.fromValues(0.0, 0.0, -1.0),
-            glMatrix.vec3.fromValues(0.0, 0.0, 1.0)
-        ];
-        let s_Ups = [
-            glMatrix.vec3.fromValues(0.0, 1.0, 0.0),
-            glMatrix.vec3.fromValues(0.0, 1.0, 0.0),
-            glMatrix.vec3.fromValues(0.0, 0.0, 1.0),
-            glMatrix.vec3.fromValues(0.0, 0.0, - 1.0),
-            glMatrix.vec3.fromValues(0.0, 1.0, 0.0),
-            glMatrix.vec3.fromValues(0.0, 1.0, 0.0)
-        ];
+
 
 
 

@@ -180,40 +180,39 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // 渲染模型
-        modelShader.use();
 
-        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        modelShader.setMat4("model", model);
-        modelShader.setMat4("view", view);
-        modelShader.setMat4("projection", projection);
-
-        modelShader.setVec3("cameraPos", cameraPos); // 传入相机的位置
-        // modelShader.setVec3("light.direction", 0.0f, 0.0f, 1.0f);     // 为了好看点 这里加了一簇光在前面，跟天空盒的太阳不太一样
-        modelShader.setInt("skybox", 4); // 注意修改纹理单元
-
-        // 模型中部分mesh只有3个纹理
-        // 模型加载器本身就已经在着色器中占用了4个纹理单元了，需要将天空盒绑定到第4个纹理单元上
-        gl.activeTexture(gl.TEXTURE0 + 4);  // ourModel
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
-        modelObj.draw(modelShader);
-
+        cubemapsShader.use();
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-2, 0, 0));
+        cubemapsShader.setMat4("model", model);
+        cubemapsShader.setMat4("view", view);
+        cubemapsShader.setMat4("projection", projection);
+        cubemapsShader.setVec3("cameraPos", cameraPos); // 传入相机的位置
+        cubemapsShader.setInt("skybox", 0);
+        // cubes
+        gl.bindVertexArray(cubeVAO);
+        gl.activeTexture(gl.TEXTURE0);
+        //gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);// 使用动态环境映射纹理 (这里纹理不包含二次反射，自己不会再别人的反射上)
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        gl.bindVertexArray(null);
 
         if (reflectProbe) {
-            cubemapsShader.use();
+            // 渲染模型
+            environmentShader.use();
+
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
-            cubemapsShader.setMat4("model", model);
-            cubemapsShader.setMat4("view", view);
-            cubemapsShader.setMat4("projection", projection);
-            cubemapsShader.setVec3("cameraPos", cameraPos); // 传入相机的位置
-            cubemapsShader.setInt("skybox", 0);
-            // cubes
-            gl.bindVertexArray(cubeVAO);
+            glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
+            environmentShader.setMat4("model", model);
+            environmentShader.setMat4("view", view);
+            environmentShader.setMat4("projection", projection);
+
+            environmentShader.setVec3("cameraPos", cameraPos); // 传入相机的位置
+            environmentShader.setInt("skybox", 0); 
+
             gl.activeTexture(gl.TEXTURE0);
-            //gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, reflectProbe);// 使用动态环境映射纹理 (这里纹理不包含二次反射，自己不会再别人的反射上)
-            gl.drawArrays(gl.TRIANGLES, 0, 36);
-            gl.bindVertexArray(null);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, reflectProbe);
+            modelObj.draw(environmentShader);
         }
 
         // 最后渲染天空盒
