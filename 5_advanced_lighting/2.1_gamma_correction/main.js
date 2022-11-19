@@ -12,7 +12,7 @@ let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 // settings
 var gammaCorrection = {
     gammaEnabled: false,
-    colorSpaceSRGB: false
+    colorSpaceSRGB: true
 };
 
 async function main() {
@@ -21,8 +21,8 @@ async function main() {
 
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.drawingBuffercolorSpaceSRGB = "display-p3";
-    gl.unpackcolorSpaceSRGB = "display-p3";
+    // gl.drawingBuffercolorSpaceSRGB = "display-p3";
+    // gl.unpackcolorSpaceSRGB = "display-p3";
 
     gl.enable(gl.DEPTH_TEST);
     addGUI(gl);
@@ -102,7 +102,7 @@ async function main() {
         if (gammaCorrection.gammaEnabled) {
             gl.activeTexture(gl.TEXTURE1);
             shader.setInt("floorTextureGammaCorrected", 1);
-            
+
         } else {
             gl.activeTexture(gl.TEXTURE0);
             shader.setInt("floorTexture", 0);
@@ -162,17 +162,17 @@ async function main() {
     function addGUI(gl) {
         const GUI = new dat.GUI({ name: "gammaCorrection" });
 
-
-
-        let gammaEnabled = GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled").onChange((val) => {
+        let gammaEnabled,colorSpaceSRGB;
+        gammaEnabled = GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled").onChange((val) => {
             gammaCorrection.gammaEnabled = val;
             if (val) {
-                gammaCorrection.colorSpaceSRGB = false;
+                // gammaCorrection.colorSpaceSRGB = false;
+                colorSpaceSRGB.setValue(false);
                 gl.drawingBuffercolorSpaceSRGB = "display-p3";
                 gl.unpackcolorSpaceSRGB = "display-p3";
             }
         });
-        GUI.add(gammaCorrection, "colorSpaceSRGB").name("colorSpaceSRGB").onChange((val) => {
+        colorSpaceSRGB = GUI.add(gammaCorrection, "colorSpaceSRGB").name("colorSpaceSRGB").onChange((val) => {
             let colorSpaceSRGB = val ? "srgb" : "display-p3";
             gl.drawingBuffercolorSpaceSRGB = colorSpaceSRGB;
             gl.unpackcolorSpaceSRGB = colorSpaceSRGB;
@@ -201,31 +201,33 @@ async function loadTexture(gl, url, gammaCorrection = false) {
                     specular贴图和法线贴图几乎都在线性空间中	
             */
             let format, internalFormat;
-            if (channels == 1)
-                format = internalFormat = gl.RED;
-            else if (channels == 3) {
-                internalFormat = gammaCorrection ? gl.SRGB8 : gl.RGB;
-                format = gl.RGB;
-            } else if (channels == 4) {
-                internalFormat = gammaCorrection ? gl.SRGB8_ALPHA8 : gl.RGBA;
-                format = gl.RGBA;
-            }
-            let texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            let level = gammaCorrection ? 0 : 0;
-            gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, format, gl.UNSIGNED_BYTE, data);
-            if (!gammaCorrection) {
-                gl.generateMipmap(gl.TEXTURE_2D)
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-    
-    
+            let img = new Image();
+            img.src = url;
+            img.onload = () => {
+                if (channels == 1)
+                    format = internalFormat = gl.RED;
+                else if (channels == 3) {
+                    internalFormat = gammaCorrection ? gl.SRGB8 : gl.RGB;
+                    format = gl.RGB;
+                } else if (channels == 4) {
+                    internalFormat = gammaCorrection ? gl.SRGB8_ALPHA8 : gl.RGBA;
+                    format = gl.RGBA;
+                }
+                let texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, format, gl.UNSIGNED_BYTE, img);
+                if (!gammaCorrection) {
+                    gl.generateMipmap(gl.TEXTURE_2D)
+                }
+
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            }else{
-                console.log(gl.getError())
+                resolve(texture);
             }
-            resolve(texture);
+
         } else {
             reject()
             console.warn("Texture failed to load at path: " + url);
