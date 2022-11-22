@@ -12,7 +12,7 @@ let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 // settings
 var gammaCorrection = {
     gammaEnabled: false,
-    colorSpace: "srgb"
+    colorSpaceSRGB: true
 };
 
 async function main() {
@@ -21,22 +21,27 @@ async function main() {
 
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    // gl.drawingBuffercolorSpaceSRGB = "display-p3";
+    // gl.unpackcolorSpaceSRGB = "display-p3";
 
     gl.enable(gl.DEPTH_TEST);
     addGUI(gl);
 
-    let shader = new Shader(gl, "shader.vs", "shader.fs");
+    let shader = new Shader(gl, "shadow_mapping_depth.vs", "shadow_mapping_depth.fs");
     await shader.initialize();
+
+    let debugDepthShader = new Shader(gl,"debug_quad","debug_quad_depth.fs");
+    await debugDepthShader.initialize();
 
     let planeVertices = new Float32Array([
         // positions            // normals         // texcoords
-        10.0, -0.5, 10.0, 0.0, 1.0, 0.0, 10.0, 0.0,
-        -10.0, -0.5, 10.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-        -10.0, -0.5, -10.0, 0.0, 1.0, 0.0, 0.0, 10.0,
+        25.0, -0.5, 25.0, 0.0, 1.0, 0.0, 25.0, 0.0,
+        -25.0, -0.5, 25.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+        -25.0, -0.5, -25.0, 0.0, 1.0, 0.0, 0.0, 25.0,
 
-        10.0, -0.5, 10.0, 0.0, 1.0, 0.0, 10.0, 0.0,
-        -10.0, -0.5, -10.0, 0.0, 1.0, 0.0, 0.0, 10.0,
-        10.0, -0.5, -10.0, 0.0, 1.0, 0.0, 10.0, 10.0
+        25.0, -0.5, 25.0, 0.0, 1.0, 0.0, 25.0, 0.0,
+        -25.0, -0.5, -25.0, 0.0, 1.0, 0.0, 0.0, 25.0,
+        25.0, -0.5, -25.0, 0.0, 1.0, 0.0, 25.0, 25.0
     ])
 
 
@@ -56,8 +61,7 @@ async function main() {
     gl.bindVertexArray(null);
 
     let floorTexture = await loadTexture(gl, "../../resources/textures/wood.png");
-    let floorTextureGammaCorrected = await loadTexture(gl, "../../resources/textures/wood_srgb.png", true);
-
+    
     let lightColors = [
         ...glMatrix.vec3.fromValues(0.25, 0.25, 0.25),
         ...glMatrix.vec3.fromValues(0.5, 0.5, 0.5),
@@ -92,8 +96,8 @@ async function main() {
         shader.setVec3("lightPositions", [].concat(...lightPositions));
         shader.setVec3("lightColors", [].concat(...lightColors));
         shader.setVec3("viewPos", camera.position);
-        shader.setInt("gamma", gammaCorrection.gammaEnabled| gammaCorrection.colorSpace != "srgb");
-        shader.setInt("dotLightAttenuation", gammaCorrection.gammaEnabled);
+        shader.setInt("gamma", gammaCorrection.gammaEnabled);
+        shader.setInt("dotLightAttenuation", gammaCorrection.gammaEnabled | gammaCorrection.colorSpaceSRGB);
 
         // floor
         gl.bindVertexArray(planeVAO);
@@ -160,17 +164,25 @@ async function main() {
     function addGUI(gl) {
         const GUI = new dat.GUI({ name: "gammaCorrection" });
 
-        let colorSpace = {
-            "display-p3": "display-p3",
-            "srgb": "srgb"
-        };
-        GUI.add(gammaCorrection, "colorSpace", colorSpace).name("colorSpace").onChange((val) => {
-            gl.drawingBuffercolorSpaceSRGB = val;
-            gl.unpackcolorSpaceSRGB = val;
-        });
-        GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled").onChange((val) => {
+        let gammaEnabled,colorSpaceSRGB;
+        gammaEnabled = GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled").onChange((val) => {
             gammaCorrection.gammaEnabled = val;
+            if (val) {
+                // gammaCorrection.colorSpaceSRGB = false;
+                colorSpaceSRGB.setValue(false);
+                gl.drawingBuffercolorSpaceSRGB = "display-p3";
+                gl.unpackcolorSpaceSRGB = "display-p3";
+            }
+        });
+        colorSpaceSRGB = GUI.add(gammaCorrection, "colorSpaceSRGB").name("colorSpaceSRGB").onChange((val) => {
+            let colorSpaceSRGB = val ? "srgb" : "display-p3";
+            gl.drawingBuffercolorSpaceSRGB = colorSpaceSRGB;
+            gl.unpackcolorSpaceSRGB = colorSpaceSRGB;
+            if (val) {
+                // gammaCorrection.gammaEnabled = false;
+                gammaEnabled.setValue(false);
 
+            }
         });
 
     }
