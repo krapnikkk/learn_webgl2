@@ -70,6 +70,10 @@ async function main() {
         ...glMatrix.vec3.fromValues(1.0, 0.0, 0.0),
         ...glMatrix.vec3.fromValues(3.0, 0.0, 0.0)
     ];
+    
+    shader.use();
+    shader.setInt("floorTexture", 0);
+    shader.setInt("floorTextureGammaCorrected", 0);
 
 
     function render(time) {
@@ -92,20 +96,16 @@ async function main() {
         shader.setVec3("lightPositions", [].concat(...lightPositions));
         shader.setVec3("lightColors", [].concat(...lightColors));
         shader.setVec3("viewPos", camera.position);
-        shader.setInt("gamma", gammaCorrection.gammaEnabled| gammaCorrection.colorSpace != "srgb");
+        shader.setInt("gamma", gammaCorrection.gammaEnabled);
         shader.setInt("dotLightAttenuation", gammaCorrection.gammaEnabled);
 
         // floor
         gl.bindVertexArray(planeVAO);
         if (gammaCorrection.gammaEnabled) {
-            gl.activeTexture(gl.TEXTURE1);
-            shader.setInt("floorTextureGammaCorrected", 1);
-
+            gl.bindTexture(gl.TEXTURE_2D, floorTextureGammaCorrected);
         } else {
-            gl.activeTexture(gl.TEXTURE0);
-            shader.setInt("floorTexture", 0);
+            gl.bindTexture(gl.TEXTURE_2D, floorTexture);
         }
-        gl.bindTexture(gl.TEXTURE_2D, gammaCorrection.gammaEnabled ? floorTextureGammaCorrected : floorTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindVertexArray(null);

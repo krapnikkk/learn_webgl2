@@ -30,7 +30,7 @@ async function main() {
     let shader = new Shader(gl, "shadow_mapping_depth.vs", "shadow_mapping_depth.fs");
     await shader.initialize();
 
-    let debugDepthShader = new Shader(gl,"debug_quad","debug_quad_depth.fs");
+    let debugDepthShader = new Shader(gl, "debug_quad", "debug_quad_depth.fs");
     await debugDepthShader.initialize();
 
     let planeVertices = new Float32Array([
@@ -61,7 +61,7 @@ async function main() {
     gl.bindVertexArray(null);
 
     let floorTexture = await loadTexture(gl, "../../resources/textures/wood.png");
-    
+
     let lightColors = [
         ...glMatrix.vec3.fromValues(0.25, 0.25, 0.25),
         ...glMatrix.vec3.fromValues(0.5, 0.5, 0.5),
@@ -104,12 +104,12 @@ async function main() {
         if (gammaCorrection.gammaEnabled) {
             gl.activeTexture(gl.TEXTURE1);
             shader.setInt("floorTextureGammaCorrected", 1);
-
+            gl.bindTexture(gl.TEXTURE_2D, floorTextureGammaCorrected);
         } else {
             gl.activeTexture(gl.TEXTURE0);
             shader.setInt("floorTexture", 0);
+            gl.bindTexture(gl.TEXTURE_2D, floorTexture);
         }
-        gl.bindTexture(gl.TEXTURE_2D, gammaCorrection.gammaEnabled ? floorTextureGammaCorrected : floorTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindVertexArray(null);
@@ -164,7 +164,7 @@ async function main() {
     function addGUI(gl) {
         const GUI = new dat.GUI({ name: "gammaCorrection" });
 
-        let gammaEnabled,colorSpaceSRGB;
+        let gammaEnabled, colorSpaceSRGB;
         gammaEnabled = GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled").onChange((val) => {
             gammaCorrection.gammaEnabled = val;
             if (val) {
