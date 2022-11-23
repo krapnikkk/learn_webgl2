@@ -1,19 +1,14 @@
 let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
 let camera = new Camera(cameraPos);
-
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
+const SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
 let deltaTime = 0.0;	// time between current frame and last frame
 let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
-// settings
-var gammaCorrection = {
-    gammaEnabled: false,
-    colorSpaceSRGB: true
-};
 
 async function main() {
     let stats = new Stats();
@@ -21,16 +16,13 @@ async function main() {
 
     const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    // gl.drawingBuffercolorSpaceSRGB = "display-p3";
-    // gl.unpackcolorSpaceSRGB = "display-p3";
 
     gl.enable(gl.DEPTH_TEST);
-    addGUI(gl);
 
     let shader = new Shader(gl, "shadow_mapping_depth.vs", "shadow_mapping_depth.fs");
     await shader.initialize();
 
-    let debugDepthShader = new Shader(gl, "debug_quad", "debug_quad_depth.fs");
+    let debugDepthShader = new Shader(gl, "debug_quad.vs", "debug_quad_depth.fs");
     await debugDepthShader.initialize();
 
     let planeVertices = new Float32Array([
@@ -44,9 +36,7 @@ async function main() {
         25.0, -0.5, -25.0, 0.0, 1.0, 0.0, 25.0, 25.0
     ])
 
-
     let positionLoc = 0, normalLoc = 1, texCoordLoc = 2;
-
     let planeVAO = gl.createVertexArray();
     let planeVBO = gl.createBuffer();
     gl.bindVertexArray(planeVAO);
@@ -62,18 +52,23 @@ async function main() {
 
     let floorTexture = await loadTexture(gl, "../../resources/textures/wood.png");
 
-    let lightColors = [
-        ...glMatrix.vec3.fromValues(0.25, 0.25, 0.25),
-        ...glMatrix.vec3.fromValues(0.5, 0.5, 0.5),
-        ...glMatrix.vec3.fromValues(0.75, 0.75, 0.75),
-        ...glMatrix.vec3.fromValues(1.0, 1.0, 1.0),
-    ];
-    let lightPositions = [
-        ...glMatrix.vec3.fromValues(-3.0, 0.0, 0.0),
-        ...glMatrix.vec3.fromValues(-1.0, 0.0, 0.0),
-        ...glMatrix.vec3.fromValues(1.0, 0.0, 0.0),
-        ...glMatrix.vec3.fromValues(3.0, 0.0, 0.0)
-    ];
+    let depthMapFBO = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthMapFBO);
+    // create a color attachment texture
+    let depthMap = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, depthMap);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, SHADOW_WIDTH, SHADOW_HEIGHT, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, depthMap, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+
+    debugDepthShader.use();
+    debugDepthShader.setInt("depthMap", 0);
+    let lightPos = glMatrix.vec3.fromValues(2, 4, -1);
 
 
     function render(time) {
@@ -84,41 +79,174 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+
+        // 1. render depth of scene to texture (from light's perspective)
+        // --------------------------------------------------------------
+        let lightProjection = glMatrix.mat4.identity(glMatrix.mat4.create()),
+            lightView = glMatrix.mat4.identity(glMatrix.mat4.create()),
+            lightSpaceMatrix = glMatrix.mat4.identity(glMatrix.mat4.create());
+        let near_plane = 1.0, far_plane = 7.5;
+        glMatrix.mat4.ortho(lightProjection, -10.0, 10.0, -10.0, 10.0, near_plane, far_plane);
+        glMatrix.mat4.lookAt(lightView, lightPos, glMatrix.vec3.fromValues(0, 0, 0), glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
+        glMatrix.mat4.mul(lightSpaceMatrix, lightProjection, lightView);
+        // render scene from light's point of view
         shader.use();
+        shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
-        let view = camera.getViewMatrix();
-        let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
+        gl.viewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, depthMapFBO);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, floorTexture);
+        renderScene(shader);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-        // light
-        shader.setVec3("lightPositions", [].concat(...lightPositions));
-        shader.setVec3("lightColors", [].concat(...lightColors));
-        shader.setVec3("viewPos", camera.position);
-        shader.setInt("gamma", gammaCorrection.gammaEnabled);
-        shader.setInt("dotLightAttenuation", gammaCorrection.gammaEnabled | gammaCorrection.colorSpaceSRGB);
+        // reset viewport
+        gl.viewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // floor
-        gl.bindVertexArray(planeVAO);
-        if (gammaCorrection.gammaEnabled) {
-            gl.activeTexture(gl.TEXTURE1);
-            shader.setInt("floorTextureGammaCorrected", 1);
-            gl.bindTexture(gl.TEXTURE_2D, floorTextureGammaCorrected);
-        } else {
-            gl.activeTexture(gl.TEXTURE0);
-            shader.setInt("floorTexture", 0);
-            gl.bindTexture(gl.TEXTURE_2D, floorTexture);
-        }
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.bindVertexArray(null);
+        // render Depth map to quad for visual debugging
+        // ---------------------------------------------
+        debugDepthShader.use();
+        debugDepthShader.setFloat("near_plane", near_plane);
+        debugDepthShader.setFloat("far_plane", far_plane);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, depthMap);
+        renderQuad();
 
         stats.update();
         requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);
+
+    // renders the 3D scene
+    // --------------------
+    function renderScene(shader) {
+        // floor
+        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        shader.setMat4("model", model);
+        gl.bindVertexArray(planeVAO);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        // cubes
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 1.5, 0.0));
+        glMatrix.mat4.scale(model,model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+        shader.setMat4("model", model);
+        renderCube();
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 1.0));
+        glMatrix.mat4.scale(model,model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+        shader.setMat4("model", model);
+        renderCube();
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, 0.0, 2.0));
+        glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(60.0), glMatrix.vec3.normalize(glMatrix.vec3.create(), glMatrix.vec3.fromValues(1.0, 0.0, 1.0)));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.25, 0.25, 0.25));
+        shader.setMat4("model", model);
+        renderCube();
+    }
+
+
+    // renderCube() renders a 1x1 3D cube in NDC.
+    // -------------------------------------------------
+    let cubeVAO = gl.createVertexArray();
+    let cubeVBO = gl.createBuffer();
+    function renderCube() {
+        // initialize (if necessary)
+        if (cubeVAO) {
+            let vertices = new Float32Array([
+                // back face
+                - 1.0, -1.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, // bottom-left
+                1.0, 1.0, -1.0, 0.0, 0.0, -1.0, 1.0, 1.0, // top-right
+                1.0, -1.0, -1.0, 0.0, 0.0, -1.0, 1.0, 0.0, // bottom-right         
+                1.0, 1.0, -1.0, 0.0, 0.0, -1.0, 1.0, 1.0, // top-right
+                -1.0, -1.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, // bottom-left
+                -1.0, 1.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, // top-left
+                // front face
+                -1.0, -1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom-left
+                1.0, -1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, // bottom-right
+                1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, // top-right
+                1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, // top-right
+                -1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, // top-left
+                -1.0, -1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom-left
+                // left face
+                -1.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0, 0.0, // top-right
+                -1.0, 1.0, -1.0, -1.0, 0.0, 0.0, 1.0, 1.0, // top-left
+                -1.0, -1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, // bottom-left
+                -1.0, -1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, // bottom-left
+                -1.0, -1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 0.0, // bottom-right
+                -1.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0, 0.0, // top-right
+                // right face
+                1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, // top-left
+                1.0, -1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 1.0, // bottom-right
+                1.0, 1.0, -1.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top-right         
+                1.0, -1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 1.0, // bottom-right
+                1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, // top-left
+                1.0, -1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, // bottom-left     
+                // bottom face
+                -1.0, -1.0, -1.0, 0.0, -1.0, 0.0, 0.0, 1.0, // top-right
+                1.0, -1.0, -1.0, 0.0, -1.0, 0.0, 1.0, 1.0, // top-left
+                1.0, -1.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, // bottom-left
+                1.0, -1.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, // bottom-left
+                -1.0, -1.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, // bottom-right
+                -1.0, -1.0, -1.0, 0.0, -1.0, 0.0, 0.0, 1.0, // top-right
+                // top face
+                -1.0, 1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+                1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
+                1.0, 1.0, -1.0, 0.0, 1.0, 0.0, 1.0, 1.0, // top-right     
+                1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
+                -1.0, 1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+                -1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0  // bottom-left        
+            ]);
+            // fill buffer
+            gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+            // link vertex attributes
+            gl.bindVertexArray(cubeVAO);
+            gl.enableVertexAttribArray(0);
+            gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 8 * vertices.BYTES_PER_ELEMENT, 0);
+            gl.enableVertexAttribArray(1);
+            gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 8 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
+            gl.enableVertexAttribArray(2);
+            gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 8 * vertices.BYTES_PER_ELEMENT, 6 * vertices.BYTES_PER_ELEMENT);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindVertexArray(null);
+        }
+        // render Cube
+        gl.bindVertexArray(cubeVAO);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        gl.bindVertexArray(null);
+    }
+
+    // renderQuad() renders a 1x1 XY quad in NDC
+    // -----------------------------------------
+
+    let quadVAO = gl.createVertexArray();
+    let quadVBO = gl.createBuffer();
+    function renderQuad() {
+        if (quadVAO) {
+            let quadVertices = new Float32Array([
+                // positions        // texture Coords
+                - 1.0, 1.0, 0.0, 0.0, 1.0,
+                -1.0, -1.0, 0.0, 0.0, 0.0,
+                1.0, 1.0, 0.0, 1.0, 1.0,
+                1.0, -1.0, 0.0, 1.0, 0.0,
+            ]);
+            // setup plane VAO
+            gl.bindVertexArray(quadVAO);
+            gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+            gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
+            gl.enableVertexAttribArray(0);
+            gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 5 * quadVertices.BYTES_PER_ELEMENT, 0);
+            gl.enableVertexAttribArray(1);
+            gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 5 * quadVertices.BYTES_PER_ELEMENT, 3 * quadVertices.BYTES_PER_ELEMENT);
+        }
+        gl.bindVertexArray(quadVAO);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        gl.bindVertexArray(null);
+    }
+
 
     let moveLock = true;
     document.onkeydown = (e) => {
@@ -160,32 +288,6 @@ async function main() {
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
     }
-
-    function addGUI(gl) {
-        const GUI = new dat.GUI({ name: "gammaCorrection" });
-
-        let gammaEnabled, colorSpaceSRGB;
-        gammaEnabled = GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled").onChange((val) => {
-            gammaCorrection.gammaEnabled = val;
-            if (val) {
-                // gammaCorrection.colorSpaceSRGB = false;
-                colorSpaceSRGB.setValue(false);
-                gl.drawingBuffercolorSpaceSRGB = "display-p3";
-                gl.unpackcolorSpaceSRGB = "display-p3";
-            }
-        });
-        colorSpaceSRGB = GUI.add(gammaCorrection, "colorSpaceSRGB").name("colorSpaceSRGB").onChange((val) => {
-            let colorSpaceSRGB = val ? "srgb" : "display-p3";
-            gl.drawingBuffercolorSpaceSRGB = colorSpaceSRGB;
-            gl.unpackcolorSpaceSRGB = colorSpaceSRGB;
-            if (val) {
-                // gammaCorrection.gammaEnabled = false;
-                gammaEnabled.setValue(false);
-
-            }
-        });
-
-    }
 }
 
 async function loadTexture(gl, url, gammaCorrection = false) {
@@ -193,43 +295,24 @@ async function loadTexture(gl, url, gammaCorrection = false) {
         let image = await IJS.Image.load(url);
         let { width, height, data, channels } = image;
         if (data) {
-            /* 
-                笔记
-                1. 为了节省存储空间, 并且根据人眼对暗的敏感, 拍照保存的图片, 都会保存成SRGB
-                1. 伽马纠正的内部纹理格式是 GL_SRGB，但数据格式还是GL_RGB
-                2. apha通道不做伽马纠正 但是带有alpha通道的的话 要用 GL_SRGB_ALPHA
-                3. 不是所有纹理都是在sRGB空间
-                    diffuse纹理，这种为物体上色的纹理几乎都是在sRGB空间中的
-                    specular贴图和法线贴图几乎都在线性空间中	
-            */
-            let format, internalFormat;
-            let img = new Image();
-            img.src = url;
-            img.onload = () => {
-                if (channels == 1)
-                    format = internalFormat = gl.RED;
-                else if (channels == 3) {
-                    internalFormat = gammaCorrection ? gl.SRGB8 : gl.RGB;
-                    format = gl.RGB;
-                } else if (channels == 4) {
-                    internalFormat = gammaCorrection ? gl.SRGB8_ALPHA8 : gl.RGBA;
-                    format = gl.RGBA;
-                }
-                let texture = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, texture);
-                gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, format, gl.UNSIGNED_BYTE, img);
-                if (!gammaCorrection) {
-                    gl.generateMipmap(gl.TEXTURE_2D)
-                }
+            let format;
+            if (channels == 1)
+                format = gl.RED;
+            else if (channels == 3)
+                format = gl.RGB;
+            else if (channels == 4)
+                format = gl.RGBA;
+            let texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
+            gl.generateMipmap(gl.TEXTURE_2D);
 
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-                resolve(texture);
-            }
-
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+            resolve(texture);
         } else {
             reject()
             console.warn("Texture failed to load at path: " + url);
