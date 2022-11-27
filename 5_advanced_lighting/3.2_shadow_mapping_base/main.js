@@ -8,7 +8,11 @@ let deltaTime = 0.0;	// time between current frame and last frame
 let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
+let fixFrontFaceShadowAcneEnabled = false;
+let fixFrontFaceShadowAcneEnabledPressed = false;
 
+let shaderShadowClampToBoder = false;
+let shaderShadowClampToBoderPressed = false;
 
 async function main() {
     let stats = new Stats();
@@ -19,8 +23,11 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let shader = new Shader(gl, "shadow_mapping_depth.vs", "shadow_mapping_depth.fs");
+    let shader = new Shader(gl,"shadow_mapping.vs","shadow_mapping.fs");
     await shader.initialize();
+
+    let depthShader = new Shader(gl, "shadow_mapping_depth.vs", "shadow_mapping_depth.fs");
+    await depthShader.initialize();
 
     let debugDepthShader = new Shader(gl, "debug_quad.vs", "debug_quad_depth.fs");
     await debugDepthShader.initialize();
@@ -57,8 +64,12 @@ async function main() {
     let depthMap = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, depthMap);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, SHADOW_WIDTH, SHADOW_HEIGHT, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    // 闪烁的摩尔纹
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    // 稳定的摩尔纹
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthMapFBO);
@@ -67,11 +78,13 @@ async function main() {
     // gl.readBuffer(gl.NONE);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+    shader.use();
+    shader.setInt("diffuseTexture", 0);
+    shader.setInt("shadowMap", 1);
 
     debugDepthShader.use();
     debugDepthShader.setInt("depthMap", 0);
-    let lightPos = glMatrix.vec3.fromValues(2, 4, -1);
-
+    let lightPos = glMatrix.vec3.fromValues(-2, 4, -1);
 
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
@@ -92,20 +105,38 @@ async function main() {
         glMatrix.mat4.lookAt(lightView, lightPos, glMatrix.vec3.fromValues(0, 0, 0), glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
         glMatrix.mat4.mul(lightSpaceMatrix, lightProjection, lightView);
         // render scene from light's point of view
-        shader.use();
-        shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        depthShader.use();
+        depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
         gl.viewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         gl.bindFramebuffer(gl.FRAMEBUFFER, depthMapFBO);
         gl.clear(gl.DEPTH_BUFFER_BIT);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, floorTexture);
-        renderScene(shader);
+        renderScene(depthShader);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         // reset viewport
         gl.viewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        // 2. render scene as normal using the generated depth/shadow map  
+        // --------------------------------------------------------------
+        shader.use();
+        let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
+        let view = camera.getViewMatrix();
+        shader.setMat4("projection", projection);
+        shader.setMat4("view", view);
+        // set light uniforms
+        shader.setVec3("viewPos", camera.position);
+        shader.setVec3("lightPos", lightPos);
+        shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, floorTexture);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, depthMap);
+        renderScene(shader);
 
         // render Depth map to quad for visual debugging
         // ---------------------------------------------
@@ -114,7 +145,7 @@ async function main() {
         debugDepthShader.setFloat("far_plane", far_plane);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, depthMap);
-        renderQuad();
+        // renderQuad();
 
         stats.update();
         requestAnimationFrame(render);
@@ -124,28 +155,28 @@ async function main() {
 
     // renders the 3D scene
     // --------------------
-    function renderScene(shader) {
+    function renderScene(depthShader) {
         // floor
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        shader.setMat4("model", model);
+        depthShader.setMat4("model", model);
         gl.bindVertexArray(planeVAO);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         // cubes
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 1.5, 0.0));
         glMatrix.mat4.scale(model,model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
-        shader.setMat4("model", model);
+        depthShader.setMat4("model", model);
         renderCube();
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 1.0));
         glMatrix.mat4.scale(model,model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
-        shader.setMat4("model", model);
+        depthShader.setMat4("model", model);
         renderCube();
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, 0.0, 2.0));
         glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(60.0), glMatrix.vec3.normalize(glMatrix.vec3.create(), glMatrix.vec3.fromValues(1.0, 0.0, 1.0)));
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.25, 0.25, 0.25));
-        shader.setMat4("model", model);
+        depthShader.setMat4("model", model);
         renderCube();
     }
 
