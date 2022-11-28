@@ -3,15 +3,18 @@ precision mediump float;
 
 out vec4 FragColor;
 
-vec3 FragPos;
-vec3 Normal;
-vec2 TexCoords;
-vec4 FragPosLightSpace;
+in vec3 FragPos;
+in vec3 Normal;
+in vec2 TexCoords;
+in vec4 FragPosLightSpace;
 
 uniform sampler2D diffuseTexture;
 uniform sampler2D shadowMap;
 
-float Sfloat ShadowCalculation(vec4 fragPosLightSpace)
+uniform vec3 lightPos;
+uniform vec3 viewPos;
+
+float ShadowCalculation(vec4 fragPosLightSpace)
 {
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;

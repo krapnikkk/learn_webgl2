@@ -74,8 +74,6 @@ async function main() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthMapFBO);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthMap, 0);
-    // gl.drawBuffer(gl.NONE);
-    // gl.readBuffer(gl.NONE);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     shader.use();
