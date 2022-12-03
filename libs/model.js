@@ -94,7 +94,7 @@ class Model {
             if (mesh.texturecoords && mesh.texturecoords[0]) {
                 vertices.push(mesh.texturecoords[0][i * 2], mesh.texturecoords[0][i * 2 + 1])
                 mesh.tangents ? vertices.push(mesh.tangents[i * 3], mesh.tangents[i * 3 + 1], mesh.tangents[i * 3 + 2]) : vertices.push(0, 0, 0);
-                mesh.bitangent ? vertices.push(mesh.bitangent[i * 3], mesh.bitangent[i * 3 + 1], mesh.bitangent[i * 3 + 2]) : vertices.push(0, 0, 0);
+                mesh.bitangents ? vertices.push(mesh.bitangents[i * 3], mesh.bitangents[i * 3 + 1], mesh.bitangents[i * 3 + 2]) : vertices.push(0, 0, 0);
             } else {
                 vertices.push(0, 0);
                 vertices.push(0, 0, 0);

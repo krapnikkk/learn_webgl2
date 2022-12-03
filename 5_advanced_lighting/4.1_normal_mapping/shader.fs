@@ -40,7 +40,7 @@ void main() {
     } else {
         lightDir = normalize(LightPos - FragPos);
     }
-    float diff = max(dot(lightDir, normal), 0.0);
+    float diff = max(dot(lightDir, norm), 0.0);
     vec3 diffuse = diff * color;
     // specular
     float spec;
