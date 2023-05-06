@@ -19,11 +19,7 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.GL_ONE, gl.GL_ONE_MINUS_SRC_COLOR);
-
-    addGUI();
+    
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
@@ -83,21 +79,21 @@ async function main() {
         5.0, -0.5, -5.0, 2.0, 2.0
     ])
 
-    let transparentVertices = new Float32Array([
+    let vegetationVertices = new Float32Array([
         // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
-        0.0, 0.5, 0.0, 0.0, 0.0,
-        0.0, -0.5, 0.0, 0.0, 1.0,
-        1.0, -0.5, 0.0, 1.0, 1.0,
+        0.0,  0.5,  0.0,  0.0,  0.0,
+        0.0, -0.5,  0.0,  0.0,  1.0,
+        1.0, -0.5,  0.0,  1.0,  1.0,
 
-        0.0, 0.5, 0.0, 0.0, 0.0,
-        1.0, -0.5, 0.0, 1.0, 1.0,
-        1.0, 0.5, 0.0, 1.0, 0.0
+        0.0,  0.5,  0.0,  0.0,  0.0,
+        1.0, -0.5,  0.0,  1.0,  1.0,
+        1.0,  0.5,  0.0,  1.0,  0.0
     ]);
 
-    let windows = [
+    let vegetation = [
         [-1.5, 0.0, -0.48],
-        [1.5, 0.0, 0.51],
-        [0.0, 0.0, 0.7],
+         [1.5, 0.0, 0.51],
+         [0.0, 0.0, 0.7],
         [-0.3, 0.0, -2.3],
         [0.5, 0.0, -0.6]
     ]
@@ -128,24 +124,26 @@ async function main() {
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
-    let windowsVAO = gl.createVertexArray();
-    let windowsVBO = gl.createBuffer();
+    let vegetationVAO = gl.createVertexArray();
+    let vegetationVBO = gl.createBuffer();
 
-    gl.bindVertexArray(windowsVAO);
-    gl.bindBuffer(gl.ARRAY_BUFFER, windowsVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, transparentVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * transparentVertices.BYTES_PER_ELEMENT, 0);
+    gl.bindVertexArray(vegetationVAO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vegetationVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, vegetationVertices, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * vegetationVertices.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * transparentVertices.BYTES_PER_ELEMENT, 3 * transparentVertices.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * vegetationVertices.BYTES_PER_ELEMENT, 3 * vegetationVertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
     let cubeTexture = await loadTexture(gl, "../../resources/textures/marble.jpg");
     let floorTexture = await loadTexture(gl, "../../resources/textures/metal.png");
-    let transparentTexture = await loadTexture(gl, "../../resources/textures/window.png");
+    let vegetationTexture = await loadTexture(gl,"../../resources/textures/grass.png",gl.CLAMP_TO_EDGE);
 
     shader.use();
+    addGUI(shader);
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
+
 
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
@@ -183,22 +181,13 @@ async function main() {
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindVertexArray(null);
 
-        // windows
-        gl.bindVertexArray(windowsVAO);
-        gl.bindTexture(gl.TEXTURE_2D, transparentTexture);
-
-        // render by dinstance sort
-        const distanceSortedMap = new sdsl.OrderedMap();
-        for (let i = 0; i < windows.length; i++) {
-            let win = windows[i];
-            let distanceVec3 = glMatrix.vec3.create();
-            glMatrix.vec3.subtract(distanceVec3, camera.position, glMatrix.vec3.fromValues(...win))
-            let distance = glMatrix.vec3.length(distanceVec3);
-            distanceSortedMap.setElement(distance, win)
-        }
-        for (let it = distanceSortedMap.rBegin(); !it.equals(distanceSortedMap.rEnd()); it = it.next()) {
+        // vegetation
+        gl.bindVertexArray(vegetationVAO);
+        gl.bindTexture(gl.TEXTURE_2D, vegetationTexture);
+        for (let i = 0; i < vegetation.length; i++)
+        {
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
-            model = glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(...it.h.R));
+            model = glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(...vegetation[i]));
             shader.setMat4("model", model);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
         }
@@ -251,57 +240,19 @@ async function main() {
         camera.onMouseScroll(e.deltaY / 100);
     }
 
-    function addGUI() {
+    function addGUI(shader) {
         const GUI = new dat.GUI({ name: "blend" });
         var blend = {
-            sfactor: gl.SRC_ALPHA,
-            dfactor: gl.ONE_MINUS_SRC_ALPHA
+            alpha: 0.25
         };
-
-        GUI.add(blend, "sfactor", {
-            "GL_ZERO": gl.ZERO,
-            "GL_ONE": gl.ONE,
-            "GL_SRC_COLOR": gl.SRC_COLOR,
-            "GL_ONE_MINUS_SRC_COLOR": gl.ONE_MINUS_SRC_COLOR,
-            "GL_DST_COLOR": gl.DST_COLOR,
-            "GL_ONE_MINUS_DST_COLOR": gl.ONE_MINUS_DST_COLOR,
-            "GL_SRC_ALPHA": gl.SRC_ALPHA,
-            "GL_ONE_MINUS_SRC_ALPHA": gl.ONE_MINUS_SRC_ALPHA,
-            "GL_DST_ALPHA": gl.DST_ALPHA,
-            "GL_ONE_MINUS_DST_ALPHA": gl.ONE_MINUS_DST_ALPHA,
-            "GL_CONSTANT_COLOR": gl.CONSTANT_COLOR,
-            "GL_ONE_MINUS_CONSTANT_COLOR": gl.ONE_MINUS_CONSTANT_COLOR,
-            "GL_CONSTANT_ALPHA": gl.CONSTANT_ALPHA,
-            "GL_ONE_MINUS_CONSTANT_ALPHA": gl.ONE_MINUS_CONSTANT_ALPHA
-        }).onChange((key) => {
-            blend.sfactor = key
-            gl.blendFunc(key, blend.dfactor);
-        })
-
-        GUI.add(blend, "dfactor", {
-            "GL_ZERO": gl.ZERO,
-            "GL_ONE": gl.ONE,
-            "GL_SRC_COLOR": gl.SRC_COLOR,
-            "GL_ONE_MINUS_SRC_COLOR": gl.ONE_MINUS_SRC_COLOR,
-            "GL_DST_COLOR": gl.DST_COLOR,
-            "GL_ONE_MINUS_DST_COLOR": gl.ONE_MINUS_DST_COLOR,
-            "GL_SRC_ALPHA": gl.SRC_ALPHA,
-            "GL_ONE_MINUS_SRC_ALPHA": gl.ONE_MINUS_SRC_ALPHA,
-            "GL_DST_ALPHA": gl.DST_ALPHA,
-            "GL_ONE_MINUS_DST_ALPHA": gl.ONE_MINUS_DST_ALPHA,
-            "GL_CONSTANT_COLOR": gl.CONSTANT_COLOR,
-            "GL_ONE_MINUS_CONSTANT_COLOR": gl.ONE_MINUS_CONSTANT_COLOR,
-            "GL_CONSTANT_ALPHA": gl.CONSTANT_ALPHA,
-            "GL_ONE_MINUS_CONSTANT_ALPHA": gl.ONE_MINUS_CONSTANT_ALPHA
-        }).onChange((key) => {
-            blend.dfactor = key
-            gl.blendFunc(blend.dfactor, key);
+        shader.setFloat("alpha",blend.alpha)
+        GUI.add(blend,"alpha",0.01,0.5,0.01).onChange((val)=>{
+            shader.setFloat("alpha",val)
         })
     }
-
 }
 
-async function loadTexture(gl, url) {
+async function loadTexture(gl, url,replaceMode) {
     return new Promise(async (resolve, reject) => {
         let image = await IJS.Image.load(url);
         let { width, height, data, channels } = image;
@@ -317,10 +268,10 @@ async function loadTexture(gl, url) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, data);
             gl.generateMipmap(gl.TEXTURE_2D);
-
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    
+    
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, replaceMode?replaceMode:gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, replaceMode?replaceMode:gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
             resolve(texture);

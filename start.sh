@@ -1,0 +1,1 @@
+nohup anywhere -p 1234 -s 2>&1 &
