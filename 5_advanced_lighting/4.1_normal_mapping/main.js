@@ -129,7 +129,7 @@ async function main() {
             //  同时也
             //       知道了模型坐标系中的位置P1 P2 P3 
             //  然后求T和B轴的坐标  
-            // ?? 这样算出来的T和B轴是垂直的?? 讨论记录在 https://zhuanlan[2]hihu.com/p/139593847
+            // ?? 这样算出来的T和B轴是垂直的?? 讨论记录在 https://zhuanlan.zhihu.com/p/139593847
 
             // 
             //  注意(U,V)是二维坐标, 
