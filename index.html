@@ -20,6 +20,7 @@
             height: 100%;
             width: 100%;
             display: flex;
+            overflow: hidden;
         }
 
         /* 设置列表容器的样式 */
@@ -41,6 +42,12 @@
             margin-bottom: 10px;
             border-bottom: 1px solid #ccc;
             /* 添加分界线样式 */
+        }
+
+        #list-container .list-title {
+            padding-bottom: 5px;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
         #list-container li a {
@@ -90,21 +97,32 @@
             fetch("./tools/list.json")
                 .then(response => response.json())
                 .then(res => {
-                    console.log(res);
+                    // console.log(res);
                     let list = res.list;
                     let listContainer = document.getElementById("list-container");
                     let ul = document.createElement("ul");
                     listContainer.appendChild(ul);
+                    let titleMap = {};
                     for (let i = 0; i < list.length; i++) {
                         let li = document.createElement("li");
+                        let url = list[i];
+                        let title = url.split("/")[1];
+                        if (!titleMap[title]) {
+                            titleMap[title] = 1;
+                            let titleLi = document.createElement("li");
+                            titleLi.classList.add("list-title");
+                            titleLi.innerHTML = title;
+                            ul.appendChild(titleLi);
+                        }
                         if (i == 0) {
                             li.classList.add("active");
+                            document.getElementById("iframe").src = url;
                         }
                         let a = document.createElement("a");
                         a.href = "#";
-                        a.innerHTML = list[i].split("/")[2];
+                        a.innerHTML = url.split("/")[2];
                         a.onclick = function () {
-                            loadPage(list[i]);
+                            loadPage(url);
                         }
                         li.appendChild(a);
                         ul.appendChild(li);

@@ -1,6 +1,6 @@
-## learn webgl2
+## learn webgl2[webgl2 version]
 
-[learnopengl](https://learnopengl.com/) [webgl2 version]
+[learnopengl](https://learnopengl.com/) 
 
 ### online
 

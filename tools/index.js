@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const list = [];
 function traverseDirectory(directoryPath) {
-  const files = fs.readdirSync(directoryPath); // 读取目录下的所有文件和文件夹
+  const files = fs.readdirSync(directoryPath).sort((a,b)=>{
+    return parseInt(a) - parseInt(b);
+  }); // 读取目录下的所有文件和文件夹
 
   files.forEach(file => {
     const filePath = path.join(directoryPath, file);
