@@ -103,6 +103,7 @@
                     let ul = document.createElement("ul");
                     listContainer.appendChild(ul);
                     let titleMap = {};
+                    const hashValue = window.location.hash.substring(1);
                     for (let i = 0; i < list.length; i++) {
                         let li = document.createElement("li");
                         let url = list[i];
@@ -114,18 +115,31 @@
                             titleLi.innerHTML = title;
                             ul.appendChild(titleLi);
                         }
-                        if (i == 0) {
+                        if (!hashValue && i == 0) {
                             li.classList.add("active");
                             document.getElementById("iframe").src = url;
                         }
                         let a = document.createElement("a");
-                        a.href = "#";
-                        a.innerHTML = url.split("/")[2];
+                        a.href = `#${i}`;
+                        let name = url.split("/")[2];
+                        a.innerHTML = name;
                         a.onclick = function () {
                             loadPage(url);
                         }
                         li.appendChild(a);
                         ul.appendChild(li);
+                    }
+
+
+                    if (hashValue) {
+                        let li = document.querySelector(`#list-container li a[href="#${hashValue}"]`).parentElement;
+                        li.classList.add("active");
+                        document.getElementById("iframe").src = list[+hashValue];
+                        let top = li.offsetTop;
+                        listContainer.scrollTo({
+                            top,
+                            behavior: 'smooth' // 添加此选项可实现平滑滚动效果
+                        });
                     }
 
                 })

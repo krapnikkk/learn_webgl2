@@ -18,21 +18,37 @@ async function main() {
     const gui = new dat.GUI({ name: "lighting" });
     addGUI(lightShader);
 
-    let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
+    let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
     let camera = new Camera(cameraPos);
 
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
     let lastFrame = 0.0;
     let isFirstMouse = true;
+    let moveLock = true;
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
     let lightPos = glMatrix.vec3.fromValues(1.2, 1.0, 2.0);
 
     document.onkeydown = (e) => {
         camera.onKeydown(e.code, deltaTime);
+        if (e.code == "Escape") {
+            moveLock = true;
+        }
+    }
+
+    canvas.onclick = (e) => {
+        if(moveLock){
+            moveLock = false;
+        }else{
+            moveLock = true;
+        }
+        isFirstMouse = true;
     }
 
     canvas.onmousemove = (e) => {
+        if (moveLock) {
+            return;
+        }
         let { clientX, clientY } = e;
         if (isFirstMouse) {
             lastX = clientX;

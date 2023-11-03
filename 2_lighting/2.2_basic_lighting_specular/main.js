@@ -36,7 +36,11 @@ async function main() {
     }
 
     canvas.onclick = (e) => {
-        moveLock = false;
+        if(moveLock){
+            moveLock = false;
+        }else{
+            moveLock = true;
+        }
         isFirstMouse = true;
     }
 

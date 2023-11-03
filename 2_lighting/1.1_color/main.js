@@ -10,22 +10,38 @@ async function main() {
     let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
     await cubeShader.initialize();
 
-    let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
+    let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
     let camera = new Camera(cameraPos);
 
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
     let lastFrame = 0.0;
     let isFirstMouse = true;
+    let moveLock = true;
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
     let lightPos = glMatrix.vec3.fromValues(1.2, 1.0, 2.0);
 
     document.onkeydown = (e) => {
         camera.onKeydown(e.code, deltaTime);
         // camera.position[1] = 0;
+        if (e.code == "Escape") {
+            moveLock = true;
+        }
+    }
+
+    canvas.onclick = (e) => {
+        if(moveLock){
+            moveLock = false;
+        }else{
+            moveLock = true;
+        }
+        isFirstMouse = true;
     }
 
     canvas.onmousemove = (e) => {
+        if (moveLock) {
+            return;
+        }
         let { clientX, clientY } = e;
         if (isFirstMouse) {
             lastX = clientX;
@@ -114,6 +130,13 @@ async function main() {
 
     let projection = glMatrix.mat4.create();
 
+    
+    let lightColors = {
+        "white":glMatrix.vec3.fromValues(1.0,1.0,1.0),
+        "green":glMatrix.vec3.fromValues(0.0,1.0,0.0),
+        "olive":glMatrix.vec3.fromValues(0.33, 0.42, 0.18),
+    };
+    let lightColor = lightColors['white']
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
@@ -124,7 +147,7 @@ async function main() {
 
         colorShader.use();
         colorShader.setVec3("objectColor",glMatrix.vec3.fromValues(1.0,0.5,0.3));
-        colorShader.setVec3("lightColor",glMatrix.vec3.fromValues(1.0,1.0,1.0));
+        colorShader.setVec3("lightColor",lightColor);
         
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
@@ -152,7 +175,17 @@ async function main() {
     }
 
     requestAnimationFrame(render);
+    addGUI();
+
+    function addGUI() {
+        const GUI = new dat.GUI({ name: "lightColor" });
+        GUI.add({lightColor:"white"}, "lightColor",Object.keys(lightColors)).onChange((val) => {
+            lightColor = lightColors[val];
+        });
+    
+    }
 }
+
 
 async function loadImage(url) {
     return new Promise((resolve, reject) => {
