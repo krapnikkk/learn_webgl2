@@ -69,6 +69,10 @@ class Shader {
         this.gl.uniform3fv(this.gl.getUniformLocation(this.ID, name), value);
     }
 
+    setMat3(name, value,tranpose = false) {
+        this.gl.uniformMatrix3fv(this.gl.getUniformLocation(this.ID, name), tranpose, value);
+    }
+
     setMat4(name, value,tranpose = false) {
         this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.ID, name), tranpose, value);
     }
