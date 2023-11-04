@@ -7,8 +7,8 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let lightShader = new Shader(gl, "light.vs", "light.fs");
-    await lightShader.initialize();
+    let lightingShader = new Shader(gl, "light.vs", "light.fs");
+    await lightingShader.initialize();
 
     let cameraPos = glMatrix.vec3.fromValues(0, 0, 3);
     let camera = new Camera(cameraPos);
@@ -21,7 +21,7 @@ async function main() {
     let lightPos = glMatrix.vec3.fromValues(0.0, 0.0, 2.0);
     let direction = glMatrix.vec3.fromValues(0, 0, -1);
 
-    addGUI(lightShader);
+    addGUI(lightingShader);
 
     let moveLock = true;
     document.onkeydown = (e) => {
@@ -144,9 +144,9 @@ async function main() {
 
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");
     let specularMap = await loadTexture(gl, "../../resources/textures/container2_specular.png");
-    lightShader.use();
-    lightShader.setInt("material.diffuse", 0);
-    lightShader.setInt("material.specular", 1);
+    lightingShader.use();
+    lightingShader.setInt("material.diffuse", 0);
+    lightingShader.setInt("material.specular", 1);
 
     let projection = glMatrix.mat4.create();
 
@@ -161,19 +161,19 @@ async function main() {
         // let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.cos(currentFrame) * 2.0;
         // glMatrix.vec3.set(lightPos, x, y, lightPos[2]);
 
-        lightShader.use();
-        lightShader.setVec3("light.position", lightPos);
-        lightShader.setVec3("light.direction", direction);
+        lightingShader.use();
+        lightingShader.setVec3("light.position", lightPos);
+        lightingShader.setVec3("light.direction", direction);
 
-        lightShader.setVec3("viewPos", camera.position);
+        lightingShader.setVec3("viewPos", camera.position);
 
-        lightShader.setFloat("light.cutOff", Math.cos(glMatrix.glMatrix.toRadian(12.5)));
-        lightShader.setFloat("light.outerCutOff", Math.cos(glMatrix.glMatrix.toRadian(17.5)));
+        lightingShader.setFloat("light.cutOff", Math.cos(glMatrix.glMatrix.toRadian(12.5)));
+        lightingShader.setFloat("light.outerCutOff", Math.cos(glMatrix.glMatrix.toRadian(17.5)));
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
-        lightShader.setMat4("projection", projection);
-        lightShader.setMat4("view", view);
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
 
         let model = glMatrix.mat4.create();
 
@@ -187,7 +187,7 @@ async function main() {
             model = glMatrix.mat4.identity(model);
             glMatrix.mat4.translate(model, model, cubePositions[i]);
             glMatrix.mat4.rotate(model, model, 20 * i, glMatrix.vec3.fromValues(1, 0.3, 0.5));
-            lightShader.setMat4("model", model);
+            lightingShader.setMat4("model", model);
             gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
 

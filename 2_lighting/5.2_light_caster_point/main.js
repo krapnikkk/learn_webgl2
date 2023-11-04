@@ -7,8 +7,8 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let lightShader = new Shader(gl, "light.vs", "light.fs");
-    await lightShader.initialize();
+    let lightingShader = new Shader(gl, "light.vs", "light.fs");
+    await lightingShader.initialize();
 
     let lightCubeShader = new Shader(gl, "cube.vs", "cube.fs"); // light source
     await lightCubeShader.initialize();
@@ -23,7 +23,7 @@ async function main() {
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
     let lightPos = glMatrix.vec3.fromValues(0.0, 0.0, 1.0);
 
-    addGUI(lightShader);
+    addGUI(lightingShader);
 
     let moveLock = true;
     document.onkeydown = (e) => {
@@ -149,9 +149,9 @@ async function main() {
 
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");
     let specularMap = await loadTexture(gl, "../../resources/textures/container2_specular.png");
-    lightShader.use();
-    lightShader.setInt("material.diffuse", 0);
-    lightShader.setInt("material.specular", 1);
+    lightingShader.use();
+    lightingShader.setInt("material.diffuse", 0);
+    lightingShader.setInt("material.specular", 1);
 
     let projection = glMatrix.mat4.create();
 
@@ -166,18 +166,18 @@ async function main() {
         // let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.cos(currentFrame) * 2.0;
         // glMatrix.vec3.set(lightPos, x, y, lightPos[2]);
 
-        lightShader.use();
-        lightShader.setVec3("light.position", lightPos);
-        lightShader.setVec3("viewPos", camera.position);
+        lightingShader.use();
+        lightingShader.setVec3("light.position", lightPos);
+        lightingShader.setVec3("viewPos", camera.position);
 
-        // lightShader.setFloat("light.constant", 1);
-        // lightShader.setFloat("light.linear", 0.09);
-        // lightShader.setFloat("light.quadratic", 0.032);
+        // lightingShader.setFloat("light.constant", 1);
+        // lightingShader.setFloat("light.linear", 0.09);
+        // lightingShader.setFloat("light.quadratic", 0.032);
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
-        lightShader.setMat4("projection", projection);
-        lightShader.setMat4("view", view);
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
 
         let model = glMatrix.mat4.create();
 
@@ -191,7 +191,7 @@ async function main() {
             model = glMatrix.mat4.identity(model);
             glMatrix.mat4.translate(model, model, cubePositions[i]);
             glMatrix.mat4.rotate(model, model, 20 * i, glMatrix.vec3.fromValues(1, 0.3, 0.5));
-            lightShader.setMat4("model", model);
+            lightingShader.setMat4("model", model);
             gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
 

@@ -7,8 +7,8 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let lightShader = new Shader(gl, "light.vs", "light.fs");
-    await lightShader.initialize();
+    let lightingShader = new Shader(gl, "light.vs", "light.fs");
+    await lightingShader.initialize();
 
 
     let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
@@ -17,7 +17,7 @@ async function main() {
     let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
     let camera = new Camera(cameraPos);
 
-    addGUI(lightShader);
+    addGUI(lightingShader);
 
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
@@ -126,8 +126,8 @@ async function main() {
     gl.enableVertexAttribArray(texCoords);
 
 
-    let lightVao = gl.createVertexArray();
-    gl.bindVertexArray(lightVao);
+    let lightCubeVao = gl.createVertexArray();
+    gl.bindVertexArray(lightCubeVao);
     // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
 
@@ -136,9 +136,9 @@ async function main() {
 
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");
     let specularMap = await loadTexture(gl, "../../resources/textures/lighting_maps_specular_color.png");
-    lightShader.use();
-    lightShader.setInt("material.diffuse", 0);
-    lightShader.setInt("material.specular", 1);
+    lightingShader.use();
+    lightingShader.setInt("material.diffuse", 0);
+    lightingShader.setInt("material.specular", 1);
 
     let projection = glMatrix.mat4.create();
 
@@ -153,21 +153,21 @@ async function main() {
         let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.sin(currentFrame / 2);
         glMatrix.vec3.set(lightPos, x, y, lightPos[2]);
 
-        lightShader.use();
-        lightShader.setVec3("light.position", lightPos);
-        lightShader.setVec3("viewPos", camera.position);
+        lightingShader.use();
+        lightingShader.setVec3("light.position", lightPos);
+        lightingShader.setVec3("viewPos", camera.position);
 
-        // lightShader.setVec3("light.ambient", glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
-        // lightShader.setVec3("light.diffuse", glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
-        // lightShader.setVec3("light.specular", glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
+        // lightingShader.setVec3("light.ambient", glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
+        // lightingShader.setVec3("light.diffuse", glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+        // lightingShader.setVec3("light.specular", glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
-        lightShader.setMat4("projection", projection);
-        lightShader.setMat4("view", view);
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        lightShader.setMat4("model", model);
+        lightingShader.setMat4("model", model);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, diffuseMap);
@@ -186,7 +186,7 @@ async function main() {
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
         cubeShader.setMat4("model", model);
         // lightCube
-        gl.bindVertexArray(lightVao);
+        gl.bindVertexArray(lightCubeVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
         stats.update();

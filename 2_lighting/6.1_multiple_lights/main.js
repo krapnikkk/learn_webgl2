@@ -7,8 +7,8 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let lightShader = new Shader(gl, "light.vs", "light.fs");
-    await lightShader.initialize();
+    let lightingShader = new Shader(gl, "light.vs", "light.fs");
+    await lightingShader.initialize();
 
 
     let lightCubeShader = new Shader(gl, "cube.vs", "cube.fs"); // light source
@@ -65,7 +65,7 @@ async function main() {
         outerCutOff: 15
     };
 
-    addGUI(lightShader);
+    addGUI(lightingShader);
 
     let moveLock = true;
     document.onkeydown = (e) => {
@@ -198,9 +198,9 @@ async function main() {
 
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");
     let specularMap = await loadTexture(gl, "../../resources/textures/container2_specular.png");
-    lightShader.use();
-    lightShader.setInt("material.diffuse", 0);
-    lightShader.setInt("material.specular", 1);
+    lightingShader.use();
+    lightingShader.setInt("material.diffuse", 0);
+    lightingShader.setInt("material.specular", 1);
 
     let projection = glMatrix.mat4.create();
 
@@ -215,45 +215,45 @@ async function main() {
         // let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.cos(currentFrame) * 2.0;
         // glMatrix.vec3.set(lightPos, x, y, lightPos[2]);
 
-        lightShader.use();
-        lightShader.setVec3("viewPos", camera.position);
-        lightShader.setFloat("material.shininess", Math.pow(2, material.shininess));
+        lightingShader.use();
+        lightingShader.setVec3("viewPos", camera.position);
+        lightingShader.setFloat("material.shininess", Math.pow(2, material.shininess));
 
         // dirLight
-        // lightShader.setVec3("light.position", lightPos);
-        lightShader.setVec3("dirLight.direction", dirLight.direction);
-        lightShader.setVec3("dirLight.specular", glMatrix.vec3.clone(dirLight.specular.map((c) => c / 255)));
-        lightShader.setVec3("dirLight.diffuse", glMatrix.vec3.clone(dirLight.diffuse.map((c) => c / 255)));
-        lightShader.setVec3("dirLight.ambient", glMatrix.vec3.clone(dirLight.ambient.map((c) => c / 255)));
+        // lightingShader.setVec3("light.position", lightPos);
+        lightingShader.setVec3("dirLight.direction", dirLight.direction);
+        lightingShader.setVec3("dirLight.specular", glMatrix.vec3.clone(dirLight.specular.map((c) => c / 255)));
+        lightingShader.setVec3("dirLight.diffuse", glMatrix.vec3.clone(dirLight.diffuse.map((c) => c / 255)));
+        lightingShader.setVec3("dirLight.ambient", glMatrix.vec3.clone(dirLight.ambient.map((c) => c / 255)));
 
         // pointLight 
         for (let i = 0; i < NR_POINT_LIGHTS; i++) {
             let { constant, linear, quadratic } = distanceMap[pointLight.distance];
-            lightShader.setVec3(`pointLights[${i}].position`, pointLightPositions[i]);
-            lightShader.setVec3(`pointLights[${i}].ambient`, glMatrix.vec3.clone(pointLight.ambient.map((c) => c / 255)));
-            lightShader.setVec3(`pointLights[${i}].diffuse`, glMatrix.vec3.clone(pointLight.diffuse.map((c) => c / 255)));
-            lightShader.setVec3(`pointLights[${i}].specular`, glMatrix.vec3.clone(pointLight.specular.map((c) => c / 255)));
-            lightShader.setFloat(`pointLights[${i}].constant`, constant);
-            lightShader.setFloat(`pointLights[${i}].linear`, linear);
-            lightShader.setFloat(`pointLights[${i}].quadratic`, quadratic);
+            lightingShader.setVec3(`pointLights[${i}].position`, pointLightPositions[i]);
+            lightingShader.setVec3(`pointLights[${i}].ambient`, glMatrix.vec3.clone(pointLight.ambient.map((c) => c / 255)));
+            lightingShader.setVec3(`pointLights[${i}].diffuse`, glMatrix.vec3.clone(pointLight.diffuse.map((c) => c / 255)));
+            lightingShader.setVec3(`pointLights[${i}].specular`, glMatrix.vec3.clone(pointLight.specular.map((c) => c / 255)));
+            lightingShader.setFloat(`pointLights[${i}].constant`, constant);
+            lightingShader.setFloat(`pointLights[${i}].linear`, linear);
+            lightingShader.setFloat(`pointLights[${i}].quadratic`, quadratic);
         }
 
         // spotLight
         let { constant, linear, quadratic } = distanceMap[spotLight.distance];
-        lightShader.setVec3("spotLight.direction", spotLight.direction);
-        lightShader.setVec3("spotLight.position", spotLight.position);
-        lightShader.setVec3("spotLight.specular", glMatrix.vec3.clone(spotLight.specular.map((c) => c / 255)));
-        lightShader.setVec3("spotLight.diffuse", glMatrix.vec3.clone(spotLight.diffuse.map((c) => c / 255)));
-        lightShader.setVec3("spotLight.ambient", glMatrix.vec3.clone(spotLight.ambient.map((c) => c / 255)));
-        lightShader.setFloat(`spotLight.constant`, constant);
-        lightShader.setFloat(`spotLight.linear`, linear);
-        lightShader.setFloat(`spotLight.quadratic`, quadratic);
+        lightingShader.setVec3("spotLight.direction", spotLight.direction);
+        lightingShader.setVec3("spotLight.position", spotLight.position);
+        lightingShader.setVec3("spotLight.specular", glMatrix.vec3.clone(spotLight.specular.map((c) => c / 255)));
+        lightingShader.setVec3("spotLight.diffuse", glMatrix.vec3.clone(spotLight.diffuse.map((c) => c / 255)));
+        lightingShader.setVec3("spotLight.ambient", glMatrix.vec3.clone(spotLight.ambient.map((c) => c / 255)));
+        lightingShader.setFloat(`spotLight.constant`, constant);
+        lightingShader.setFloat(`spotLight.linear`, linear);
+        lightingShader.setFloat(`spotLight.quadratic`, quadratic);
 
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
-        lightShader.setMat4("projection", projection);
-        lightShader.setMat4("view", view);
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
 
         let model = glMatrix.mat4.create();
 
@@ -267,7 +267,7 @@ async function main() {
             model = glMatrix.mat4.identity(model);
             glMatrix.mat4.translate(model, model, cubePositions[i]);
             glMatrix.mat4.rotate(model, model, 20 * i, glMatrix.vec3.fromValues(1, 0.3, 0.5));
-            lightShader.setMat4("model", model);
+            lightingShader.setMat4("model", model);
             gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
 

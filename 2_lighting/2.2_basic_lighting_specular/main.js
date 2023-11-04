@@ -7,8 +7,8 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let lightShader = new Shader(gl, "light.vs", "light.fs");
-    await lightShader.initialize();
+    let lightingShader = new Shader(gl, "light.vs", "light.fs");
+    await lightingShader.initialize();
 
     let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
     await cubeShader.initialize();
@@ -17,7 +17,7 @@ async function main() {
     let camera = new Camera(cameraPos);
 
     const gui = new dat.GUI({ name: "lighting" });
-    addGUI(lightShader);
+    addGUI(lightingShader);
 
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
@@ -127,8 +127,8 @@ async function main() {
     gl.enableVertexAttribArray(normalLoc);
 
 
-    let lightVao = gl.createVertexArray();
-    gl.bindVertexArray(lightVao);
+    let lightCubeVao = gl.createVertexArray();
+    gl.bindVertexArray(lightCubeVao);
     // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
 
@@ -149,19 +149,19 @@ async function main() {
         let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.sin(currentFrame / 2);
         glMatrix.vec3.set(lightPos, x, y, lightPos[2]);
 
-        lightShader.use();
-        lightShader.setVec3("objectColor", glMatrix.vec3.fromValues(1.0, 0.5, 0.31));
-        lightShader.setVec3("lightColor", glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
-        lightShader.setVec3("lightPos", lightPos);
-        lightShader.setVec3("viewPos", camera.position);
+        lightingShader.use();
+        lightingShader.setVec3("objectColor", glMatrix.vec3.fromValues(1.0, 0.5, 0.31));
+        lightingShader.setVec3("lightColor", glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
+        lightingShader.setVec3("lightPos", lightPos);
+        lightingShader.setVec3("viewPos", camera.position);
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
-        lightShader.setMat4("projection", projection);
-        lightShader.setMat4("view", view);
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        lightShader.setMat4("model", model);
+        lightingShader.setMat4("model", model);
 
         gl.bindVertexArray(cubeVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
@@ -175,7 +175,7 @@ async function main() {
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
         cubeShader.setMat4("model", model);
 
-        gl.bindVertexArray(lightVao);
+        gl.bindVertexArray(lightCubeVao);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
 
         stats.update();
@@ -215,6 +215,8 @@ async function main() {
             shader.use();
             shader.setFloat("specularStrength", specularStrength);
         })
+        ambientFolder.open();
+        specularFolder.open();
     }
 }
 

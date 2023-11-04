@@ -7,13 +7,13 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let lightShader = new Shader(gl, "light.vs", "light.fs");
-    await lightShader.initialize();
+    let lightingShader = new Shader(gl, "light.vs", "light.fs");
+    await lightingShader.initialize();
 
     let cameraPos = glMatrix.vec3.fromValues(0, 0, 3);
     let camera = new Camera(cameraPos);
 
-    addGUI(lightShader);
+    addGUI(lightingShader);
 
     // timing
     let deltaTime = 0.0;	// time between current frame and last frame
@@ -139,9 +139,9 @@ async function main() {
 
     let diffuseMap = await loadTexture(gl, "../../resources/textures/container2.png");
     let specularMap = await loadTexture(gl, "../../resources/textures/container2_specular.png");
-    lightShader.use();
-    lightShader.setInt("material.diffuse", 0);
-    lightShader.setInt("material.specular", 1);
+    lightingShader.use();
+    lightingShader.setInt("material.diffuse", 0);
+    lightingShader.setInt("material.specular", 1);
 
     let projection = glMatrix.mat4.create();
 
@@ -153,14 +153,14 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        lightShader.use();
-        // lightShader.setVec3("light.direction", glMatrix.vec3.fromValues(-0.2, -1, -0.3));
-        lightShader.setVec3("viewPos", camera.position);
+        lightingShader.use();
+        // lightingShader.setVec3("light.direction", glMatrix.vec3.fromValues(-0.2, -1, -0.3));
+        lightingShader.setVec3("viewPos", camera.position);
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
         let view = camera.getViewMatrix();
-        lightShader.setMat4("projection", projection);
-        lightShader.setMat4("view", view);
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
 
         let model = glMatrix.mat4.create();
 
@@ -174,7 +174,7 @@ async function main() {
             model = glMatrix.mat4.identity(model);
             glMatrix.mat4.translate(model, model, cubePositions[i]);
             glMatrix.mat4.rotate(model, model, 20 * i, glMatrix.vec3.fromValues(1, 0.3, 0.5));
-            lightShader.setMat4("model", model);
+            lightingShader.setMat4("model", model);
             gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
 
