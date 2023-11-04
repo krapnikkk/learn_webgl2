@@ -10,9 +10,9 @@ async function main() {
     let lightingShader = new Shader(gl, "light.vs", "light.fs");
     await lightingShader.initialize();
     lightingShader.use();
-    lightingShader.setFloat("ambientStrength",0.1);
-    
-    lightingShader.setFloat("specularStrength",0.1);
+    lightingShader.setFloat("ambientStrength", 0.1);
+
+    lightingShader.setFloat("specularStrength", 0.1);
     lightingShader.setFloat("shininess", 2.0);
 
     let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
@@ -29,7 +29,7 @@ async function main() {
     let lastFrame = 0.0;
     let isFirstMouse = true;
     let lastX = gl.drawingBufferWidth / 2, lastY = gl.drawingBufferHeight / 2;
-    let lightPos = glMatrix.vec3.fromValues(1.2, 1.0, 2.0);
+    let lightPos = glMatrix.vec3.fromValues(0.0, 0.0, 6.0);
 
     let moveLock = true;
     document.onkeydown = (e) => {
@@ -41,9 +41,9 @@ async function main() {
     }
 
     canvas.onclick = (e) => {
-        if(moveLock){
+        if (moveLock) {
             moveLock = false;
-        }else{
+        } else {
             moveLock = true;
         }
         isFirstMouse = true;
@@ -131,7 +131,7 @@ async function main() {
     gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 6 * vertices.BYTES_PER_ELEMENT, 3 * vertices.BYTES_PER_ELEMENT);
     gl.enableVertexAttribArray(normalLoc);
 
-    
+
     let lightCubeVao = gl.createVertexArray();
     gl.bindVertexArray(lightCubeVao);
     // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
@@ -151,8 +151,8 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.sin(currentFrame/2);
-        glMatrix.vec3.set(lightPos,x,y,lightPos[2]);
+        let x = 1.0 + Math.sin(currentFrame) * 2.0, y = Math.sin(currentFrame / 2);
+        // glMatrix.vec3.set(lightPos,x,y,lightPos[2]);
 
         lightingShader.use();
         lightingShader.setVec3("objectColor", glMatrix.vec3.fromValues(1.0, 0.5, 0.3));
@@ -195,25 +195,26 @@ async function main() {
         let ambient = {
             ambientStrength: 0.1
         },
-        specular = {
-            shininess:2,
-            specularStrength: 0.5
-        }
+            specular = {
+                shininess: 2,
+                specularStrength: 0.5
+            }
 
-        ambientFolder.add(ambient, "ambientStrength", 0, 1).onChange((ambientStrength) => {
+        ambientFolder.add(ambient, "ambientStrength", 0, 1, 0.1).onChange((ambientStrength) => {
             shader.use();
             shader.setFloat("ambientStrength", ambientStrength);
         })
 
-        specularFolder.add(specular, "shininess", 1, 8).onChange((shininess) => {
+        specularFolder.add(specular, "shininess", 1, 8, 1).name("shininessPow").onChange((shininess) => {
             shader.use();
-            shader.setFloat("shininess", Math.pow(2,shininess));
+            shader.setFloat("shininess", Math.pow(2, shininess));
         })
 
         specularFolder.add(specular, "specularStrength", 0, 1).onChange((specularStrength) => {
             shader.use();
             shader.setFloat("specularStrength", specularStrength);
         })
+        specularFolder.open();
     }
 }
 
