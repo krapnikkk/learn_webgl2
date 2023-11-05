@@ -42,10 +42,11 @@ void main() {
     if(type == 0) {
         col = texture(screenTexture, TexCoords).rgb;
     } else if(type == 1) {
+        col = vec3(1.0 - texture(screenTexture, TexCoords));
+    } else if(type == 2) {
+        FragColor = texture(screenTexture, TexCoords);
         float average = 0.2126 * FragColor.r + 0.7152 * FragColor.g + 0.0722 * FragColor.b;
         col = vec3(average);
-    } else if(type == 2) {
-        col = vec3(1.0 - texture(screenTexture, TexCoords));
     } else if(type == 3) {
         col = convolution(1);
     } else if(type == 4) {

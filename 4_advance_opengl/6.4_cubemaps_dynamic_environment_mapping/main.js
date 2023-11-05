@@ -160,9 +160,6 @@ async function main() {
     ];
     let cubemapTexture = await loadCubemap(gl, faces);
 
-    let modelShader = new Shader(gl, "model.vs", "model.fs");
-    await modelShader.initialize();
-
     let modelObj = new Model(gl, '../../resources/objects/bunny');
     await modelObj.loadModel(['bunny.obj'])
 
