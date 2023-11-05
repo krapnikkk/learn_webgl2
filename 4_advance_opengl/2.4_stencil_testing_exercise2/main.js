@@ -15,14 +15,22 @@ async function main() {
     let stats = new Stats();
     document.body.appendChild(stats.dom);
 
-    const gl = document.getElementById("canvas").getContext("webgl2");
+    const gl = document.getElementById("canvas").getContext("webgl2",{stencil:true});
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    gl.enable(gl.DEPTH_TEST);
-    
+    gl.disable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LESS);
+    // stencil
+    gl.enable(gl.STENCIL_TEST);
+    gl.stencilFunc(gl.EQUAL,1,0xFF);
+    gl.stencilOp(gl.KEEP, gl.REPLACE, gl.REPLACE);
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
+
+    let colorShader = new Shader(gl, "shader.vs", "color.fs");
+    await colorShader.initialize();
+
     let cubeVertices = new Float32Array([
         // positions          // texture Coords
         -0.5, -0.5, -0.5, 0.0, 0.0,
@@ -70,33 +78,15 @@ async function main() {
 
     let planeVertices = new Float32Array([
         // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-        5.0, -0.5, 5.0, 2.0, 0.0,
-        -5.0, -0.5, 5.0, 0.0, 0.0,
-        -5.0, -0.5, -5.0, 0.0, 2.0,
+        5.0, -0.2, 10.0, 2.0, 0.0,
+        -5.0, -0.2, 10.0, 0.0, 0.0,
+        -5.0, -0.2, -10.0, 0.0, 2.0,
 
-        5.0, -0.5, 5.0, 2.0, 0.0,
-        -5.0, -0.5, -5.0, 0.0, 2.0,
-        5.0, -0.5, -5.0, 2.0, 2.0
+        5.0, -0.2, 10.0, 2.0, 0.0,
+        -5.0, -0.2, -10.0, 0.0, 2.0,
+        5.0, -0.2, -10.0, 2.0, 2.0
     ])
 
-    let vegetationVertices = new Float32Array([
-        // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
-        0.0,  0.5,  0.0,  0.0,  0.0,
-        0.0, -0.5,  0.0,  0.0,  1.0,
-        1.0, -0.5,  0.0,  1.0,  1.0,
-
-        0.0,  0.5,  0.0,  0.0,  0.0,
-        1.0, -0.5,  0.0,  1.0,  1.0,
-        1.0,  0.5,  0.0,  1.0,  0.0
-    ]);
-
-    let vegetation = [
-        [-1.5, 0.0, -0.48],
-         [1.5, 0.0, 0.51],
-         [0.0, 0.0, 0.7],
-        [-0.3, 0.0, -2.3],
-        [0.5, 0.0, -0.6]
-    ]
 
     let positionLoc = 0, texCoordLoc = 1;
 
@@ -124,24 +114,10 @@ async function main() {
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
-    let vegetationVAO = gl.createVertexArray();
-    let vegetationVBO = gl.createBuffer();
-
-    gl.bindVertexArray(vegetationVAO);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vegetationVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, vegetationVertices, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 5 * vegetationVertices.BYTES_PER_ELEMENT, 0);
-    gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 5 * vegetationVertices.BYTES_PER_ELEMENT, 3 * vegetationVertices.BYTES_PER_ELEMENT);
-    gl.enableVertexAttribArray(texCoordLoc);
-    gl.bindVertexArray(null);
-
     let cubeTexture = await loadTexture(gl, "../../resources/textures/marble.jpg");
     let floorTexture = await loadTexture(gl, "../../resources/textures/metal.png");
-    let vegetationTexture = await loadTexture(gl,"../../resources/textures/grass.png",gl.CLAMP_TO_EDGE);
 
     shader.use();
-    addGUI(shader);
     gl.uniform1i(gl.getUniformLocation(shader.ID, "texture1"), 0);
 
 
@@ -151,16 +127,33 @@ async function main() {
         lastFrame = currentFrame;
 
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
-        shader.use();
+        colorShader.use();
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
+        colorShader.setMat4("view", view);
+        colorShader.setMat4("projection", projection);
+
+        shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
+
+        gl.stencilMask(0x00);// 禁用写入，不更新模板缓冲
+
+        // floor
+        gl.bindVertexArray(planeVAO);
+        gl.bindTexture(gl.TEXTURE_2D, floorTexture);
+        shader.setMat4("model", glMatrix.mat4.identity(glMatrix.mat4.create()));
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.bindVertexArray(null);
+
+        //绘制物体之前，将模板函数设置为gl.ALWAYS
+        gl.stencilFunc(gl.ALWAYS, 1, 0xFF); // 所有片段都应该更新模板缓冲
+        gl.stencilMask(0xFF); // 每一位写入模板缓冲时都保持原样
 
         // cubes
         gl.bindVertexArray(cubeVAO);
@@ -174,24 +167,35 @@ async function main() {
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
         shader.setMat4("model", model);
         gl.drawArrays(gl.TRIANGLES, 0, 36);
-        // floor
-        gl.bindVertexArray(planeVAO);
-        gl.bindTexture(gl.TEXTURE_2D, floorTexture);
-        shader.setMat4("model", glMatrix.mat4.identity(glMatrix.mat4.create()));
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        // 上面已经绘制好cubes 存在像素的位置的模板值都是1，其它的是0
+        // 只有模板值不等于1的才能通过模板测试
+        gl.stencilFunc(gl.NOTEQUAL, 1, 0xFF); // 保证只绘制箱子之外的部分,箱子的模板缓冲已经是1了
+        gl.stencilMask(0x00);// 禁用写入，不更新模板缓冲，使用之前的数据进行对比
+        gl.disable(gl.DEPTH_TEST); // 关闭深度测试，让边框被绘制
+        colorShader.use();
+        let scale = 1.05;
+
+        // outline
+        gl.bindVertexArray(cubeVAO);
+        gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, 0.0, -1.0));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(scale, scale, scale));
+        colorShader.setMat4("model", model);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 0.0));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(scale, scale, scale));
+        colorShader.setMat4("model", model);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
         gl.bindVertexArray(null);
 
-        // vegetation
-        gl.bindVertexArray(vegetationVAO);
-        gl.bindTexture(gl.TEXTURE_2D, vegetationTexture);
-        for (let i = 0; i < vegetation.length; i++)
-        {
-            model = glMatrix.mat4.identity(glMatrix.mat4.create());
-            model = glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(...vegetation[i]));
-            shader.setMat4("model", model);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-        }
-        gl.bindVertexArray(null);
+        // 还原
+        gl.stencilMask(0xFF);// 每一位写入模板缓冲时都保持原样
+        gl.stencilFunc(gl.ALWAYS, 0, 0xFF);
+        gl.enable(gl.DEPTH_TEST);
 
         stats.update();
         requestAnimationFrame(render);
@@ -239,20 +243,9 @@ async function main() {
     canvas.onwheel = (e) => {
         camera.onMouseScroll(e.deltaY / 100);
     }
-
-    function addGUI(shader) {
-        const GUI = new dat.GUI({ name: "blend" });
-        var blend = {
-            alpha: 0.25
-        };
-        shader.setFloat("alpha",blend.alpha)
-        GUI.add(blend,"alpha",0.01,0.5,0.01).onChange((val)=>{
-            shader.setFloat("alpha",val)
-        })
-    }
 }
 
-async function loadTexture(gl, url,replaceMode) {
+async function loadTexture(gl, url) {
     return new Promise(async (resolve, reject) => {
         let image = await IJS.Image.load(url);
         let { width, height, data, channels } = image;
@@ -270,8 +263,8 @@ async function loadTexture(gl, url,replaceMode) {
             gl.generateMipmap(gl.TEXTURE_2D);
     
     
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, replaceMode?replaceMode:gl.REPEAT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, replaceMode?replaceMode:gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
             resolve(texture);

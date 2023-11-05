@@ -17,9 +17,9 @@ let material = {
 // pointLight
 const NR_POINT_LIGHTS = 2;
 let pointLight = {
-    specular: [1 * 255, 1 * 255, 1 * 255],
-    diffuse: [1 * 255, 1 * 255, 1 * 255],
-    ambient: [0.2 * 255, 0.2 * 255, 0.2 * 255],
+    specular: [0.5 * 255, 0.5 * 255, 0.5 * 255],
+    diffuse: [0.8 * 255, 0.8 * 255, 0.8 * 255],
+    ambient: [1 * 255, 1 * 255, 1 * 255],
     distance: "65"
 },
     distanceMap = {

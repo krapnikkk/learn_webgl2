@@ -21,7 +21,7 @@ async function main() {
     gl.enable(gl.DEPTH_TEST);
 
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.GL_ONE, gl.GL_ONE_MINUS_SRC_COLOR);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     addGUI();
 
