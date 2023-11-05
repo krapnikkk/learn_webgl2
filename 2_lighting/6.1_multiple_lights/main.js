@@ -25,10 +25,10 @@ async function main() {
     let lightPos = glMatrix.vec3.fromValues(1.2, 1.0, 2.0);
     // dirLightDir 
     let dirLight = {
-        specular: [1 * 255, 1 * 255, 1 * 255],
-        diffuse: [0.5 * 255, 0.5 * 255, 0.5 * 255],
-        ambient: [0.2 * 255, 0.2 * 255, 0.2 * 255],
-        direction: glMatrix.vec3.fromValues(0, 0, -1)
+        specular: [0.5 * 255, 0.5 * 255, 0.5 * 255],
+        diffuse: [0.4 * 255, 0.4 * 255, 0.4 * 255],
+        ambient: [0.05 * 255, 0.05 * 255, 0.05 * 255],
+        direction: glMatrix.vec3.fromValues(-0.2, 1, -0.3)
     };
     // material
     let material = {
@@ -39,8 +39,8 @@ async function main() {
     const NR_POINT_LIGHTS = 4;
     let pointLight = {
         specular: [1 * 255, 1 * 255, 1 * 255],
-        diffuse: [0.5 * 255, 0.5 * 255, 0.5 * 255],
-        ambient: [0.2 * 255, 0.2 * 255, 0.2 * 255],
+        diffuse: [0.8 * 255, 0.8 * 255, 0.8 * 255],
+        ambient: [0.05 * 255, 0.05 * 255, 0.05 * 255],
         distance: "50"
     },
         distanceMap = {
@@ -56,8 +56,8 @@ async function main() {
     // spotLight
     let spotLight = {
         specular: [1 * 255, 1 * 255, 1 * 255],
-        diffuse: [0.5 * 255, 0.5 * 255, 0.5 * 255],
-        ambient: [0.2 * 255, 0.2 * 255, 0.2 * 255],
+        diffuse: [1 * 255, 1 * 255, 1 * 255],
+        ambient: [0 * 255, 0 * 255, 0 * 255],
         distance: "50",
         direction: glMatrix.vec3.fromValues(0, 0, -1),
         position: glMatrix.vec3.fromValues(0.0, 0.0, 2.0),
@@ -248,6 +248,8 @@ async function main() {
         lightingShader.setFloat(`spotLight.constant`, constant);
         lightingShader.setFloat(`spotLight.linear`, linear);
         lightingShader.setFloat(`spotLight.quadratic`, quadratic);
+        lightingShader.setFloat(`spotLight.cutOff`, Math.cos(glMatrix.glMatrix.toRadian(spotLight.cutOff)));
+        lightingShader.setFloat(`spotLight.outerCutOff`, Math.cos(glMatrix.glMatrix.toRadian(spotLight.outerCutOff)));
 
 
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
@@ -332,8 +334,8 @@ async function main() {
         spotlightAmbientFolder.addColor(spotLight, "ambient")
 
         spotLightDistanceFolder.add(spotLight, "distance", Object.keys(distanceMap));
-        spotLightcutOffFolder.add(spotLight, "cutOff", 0, 360, 1)
-        spotLightcutOffFolder.add(spotLight, "outerCutOff", 0, 360, 1)
+        spotLightcutOffFolder.add(spotLight, "cutOff", 0, 45, 1)
+        spotLightcutOffFolder.add(spotLight, "outerCutOff", 0, 45, 1)
 
         spotLightDirFolder.add(spotLight.direction, 0, -10, 10, 0.1);
         spotLightDirFolder.add(spotLight.direction, 1, -10, 10, 0.1);
