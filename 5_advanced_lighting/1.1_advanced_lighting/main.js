@@ -24,7 +24,6 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    addGUI();
 
     let shader = new Shader(gl, "shader.vs", "shader.fs");
     await shader.initialize();
@@ -39,7 +38,6 @@ async function main() {
         -10.0, -0.5, -10.0, 0.0, 1.0, 0.0, 0.0, 10.0,
         10.0, -0.5, -10.0, 0.0, 1.0, 0.0, 10.0, 10.0
     ])
-
 
     let positionLoc = 0, normalLoc = 1, texCoordLoc = 2;
 
@@ -61,8 +59,66 @@ async function main() {
     shader.use();
     shader.setInt("floorTexture", 0);
 
+
+    let cubeShader = new Shader(gl, "cube.vs", "cube.fs");
+    await cubeShader.initialize();
+    let vertices = new Float32Array([
+        -0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
+        0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
+        0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
+        0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
+        -0.5, 0.5, -0.5, 0.0, 0.0, -1.0,
+        -0.5, -0.5, -0.5, 0.0, 0.0, -1.0,
+
+        -0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
+        0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
+        0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
+        0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
+        -0.5, 0.5, 0.5, 0.0, 0.0, 1.0,
+        -0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
+
+        -0.5, 0.5, 0.5, -1.0, 0.0, 0.0,
+        -0.5, 0.5, -0.5, -1.0, 0.0, 0.0,
+        -0.5, -0.5, -0.5, -1.0, 0.0, 0.0,
+        -0.5, -0.5, -0.5, -1.0, 0.0, 0.0,
+        -0.5, -0.5, 0.5, -1.0, 0.0, 0.0,
+        -0.5, 0.5, 0.5, -1.0, 0.0, 0.0,
+
+        0.5, 0.5, 0.5, 1.0, 0.0, 0.0,
+        0.5, 0.5, -0.5, 1.0, 0.0, 0.0,
+        0.5, -0.5, -0.5, 1.0, 0.0, 0.0,
+        0.5, -0.5, -0.5, 1.0, 0.0, 0.0,
+        0.5, -0.5, 0.5, 1.0, 0.0, 0.0,
+        0.5, 0.5, 0.5, 1.0, 0.0, 0.0,
+
+        -0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
+        0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
+        0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
+        0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
+        -0.5, -0.5, 0.5, 0.0, -1.0, 0.0,
+        -0.5, -0.5, -0.5, 0.0, -1.0, 0.0,
+
+        -0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
+        0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
+        0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
+        0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
+        -0.5, 0.5, 0.5, 0.0, 1.0, 0.0,
+        -0.5, 0.5, -0.5, 0.0, 1.0, 0.0
+    ]);
+
+    let lightCubeVao = gl.createVertexArray();
+    let vbo = gl.createBuffer();
+    gl.bindVertexArray(lightCubeVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 6 * vertices.BYTES_PER_ELEMENT, 0);
+    gl.enableVertexAttribArray(positionLoc);
+
     let lightPos = glMatrix.vec3.fromValues(0,0,0);
 
+    addGUI();
+    
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
@@ -92,6 +148,18 @@ async function main() {
         gl.bindTexture(gl.TEXTURE_2D, floorTexture);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindVertexArray(null);
+
+        cubeShader.use();
+        cubeShader.setMat4("projection", projection);
+        cubeShader.setMat4("view", view);
+
+        let model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, lightPos);
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.2, 0.2, 0.2));
+        cubeShader.setMat4("model", model);
+
+        gl.bindVertexArray(lightCubeVao);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
 
         stats.update();
         requestAnimationFrame(render);
@@ -152,6 +220,17 @@ async function main() {
         });
         GUI.add(light, "lowShininess").name("lowShininess").onChange((val) => {
             light.lowShininess = val;
+        });
+
+        const lightFolder = GUI.addFolder("light");
+        lightFolder.add(lightPos, "0", -10, 10).name("x").onChange((val) => {
+            lightPos[0] = val;
+        });
+        lightFolder.add(lightPos, "1", -10, 10).name("y").onChange((val) => {
+            lightPos[1] = val;
+        });
+        lightFolder.add(lightPos, "2", -10, 10).name("z").onChange((val) => {
+            lightPos[2] = val;
         });
     }
 }

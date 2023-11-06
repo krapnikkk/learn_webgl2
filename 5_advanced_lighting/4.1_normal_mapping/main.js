@@ -47,7 +47,7 @@ async function main() {
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let normalize = glMatrix.vec3.create();
         glMatrix.vec3.normalize(normalize, glMatrix.vec3.fromValues(1.0, 0.0, 1.0))
-        glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(time / 1000 * -10), normalize);
+        // glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(time / 1000 * -10), normalize);
 
         shader.use();
         shader.setMat4("projection", projection);
@@ -62,6 +62,11 @@ async function main() {
         gl.bindTexture(gl.TEXTURE_2D, normalMap);
         renderQuad();
 
+        shader.setVec3("lightPos", lightPos);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, diffuseMap);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, normalMap);
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, lightPos);
         let sacleAmount = 0.1;
