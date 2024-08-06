@@ -6,14 +6,16 @@ in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoords;
 
+#define POINT_LIGHTS 4
+
 struct Light {
     vec3 Position;
     vec3 Color;
 };
 
-uniform Light lights[16];
+uniform Light lights[POINT_LIGHTS];
 uniform sampler2D diffuseTexture;
-uniform vec3 viewPos;
+// uniform vec3 viewPos;
 
 void main() {
     vec3 color = texture(diffuseTexture, TexCoords).rgb;
@@ -22,7 +24,7 @@ void main() {
     vec3 ambient = 0.0 * color;
     // lighting
     vec3 lighting = vec3(0.0);
-    for(int i = 0; i < 16; i++) {
+    for(int i = 0; i < POINT_LIGHTS; i++) {
         // diffuse
         vec3 lightDir = normalize(lights[i].Position - FragPos);
         float diff = max(dot(lightDir, normal), 0.0);
