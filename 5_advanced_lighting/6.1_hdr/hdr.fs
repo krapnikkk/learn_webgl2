@@ -6,6 +6,7 @@ in vec2 TexCoords;
 
 uniform sampler2D hdrBuffer;
 uniform bool hdr;
+uniform bool debug;
 uniform float exposure;
 
 void main()
@@ -18,7 +19,7 @@ void main()
 		// (简单的色调映射算法)Reinhard 色调映射，它涉及将整个 HDR 颜色值划分为(dividing  to) LDR 颜色值
 		// Reinhard 色调映射算法将所有亮度值均匀地平衡到 LDR 上( evenly balances out all brightness values onto LDR)
         vec3 result ;
-		if (gl_FragCoord.x < 400.0)
+		if (gl_FragCoord.x < 400.0 && debug)
 		{
 			// 我们可以正确地看到存储在浮点帧缓冲区中的整个 HDR 值范围
 			// 这个曲线经过原点0 有点类似lnx 并且在+无限接近1
@@ -71,7 +72,7 @@ void main()
 			我们需要做的是在不丢失任何细节的情况下将所有浮点颜色值转换为 0.0 - 1.0 范围。 
 			我们需要应用一个称为色调映射的过程。
 		*/   
-		if (gl_FragCoord.x < 400.0)
+		if (gl_FragCoord.x < 400.0 && debug)
 		{
 			vec3 result = pow(hdrColor, vec3(1.0 / gamma));
 			FragColor = vec4(result, 1.0);

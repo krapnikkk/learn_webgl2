@@ -1,21 +1,25 @@
-let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
-let camera = new Camera(cameraPos);
+let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
+let up =  glMatrix.vec3.fromValues(0, 1, 0)
+let camera = new Camera(cameraPos,up,90);
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
-const height_scale = 0.1;
-const parallax_mapping = true;
 
 let deltaTime = 0.0;	// time between current frame and last frame
 let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
-let exposure = 1;
+
+let hdr = {
+    "enable": true,
+    "exposure": 0.1,
+    "debug":false
+};
 
 async function main() {
     let stats = new Stats();
     document.body.appendChild(stats.dom);
 
-    const gl = document.getElementById("canvas").getContext("webgl2");
+    const gl = document.getElementById("canvas").getContext("webgl2", { "antialias": true });
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
@@ -60,7 +64,6 @@ async function main() {
 
     let bufferStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     if (bufferStatus != gl.FRAMEBUFFER_COMPLETE) {
-        debugger
         console.log("Framebuffer not complete!");
     }
 
@@ -103,30 +106,31 @@ async function main() {
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
+        let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-        let view = camera.getViewMatrix();
 
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(1.0, 0.0, 25.0))
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, 25.0))
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(2.5, 2.5, 27.5));
 
         shader.use();
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, woodTexture);
 
-        shader.setMat4("projection", projection);
-        shader.setMat4("view", view);
-        shader.setMat4("model", model);
-
-        // shader.setVec3("viewPos", camera.position);
         for (let i = 0; i < lightPositions.length; i++) {
             shader.setVec3(`lights[${i}].Position`, lightPositions[i]);
             shader.setVec3(`lights[${i}].Color`, lightColors[i]);
         }
+        
+        // render tunnel
+        shader.setVec3("viewPos", camera.position);
+        shader.setMat4("projection", projection);
+        shader.setMat4("view", view);
+        shader.setMat4("model", model);
 
         shader.setInt("inverse_normals", true);
+
         renderCube();
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -134,8 +138,9 @@ async function main() {
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, colorBuffer);
-        hdrShader.setBool("hdr", true);
-        hdrShader.setFloat("exposure", exposure);
+        hdrShader.setBool("hdr", hdr.enable);
+        hdrShader.setFloat("exposure", hdr.exposure);
+        hdrShader.setBool("debug", hdr.debug);
         renderQuad();
 
         stats.update();
@@ -147,14 +152,9 @@ async function main() {
     function addGUI() {
         const GUI = new dat.GUI({ name: "HeightMap" });
 
-        let HeightMap = {
-            "enable": true,
-        };
-        GUI.add(HeightMap, "enable").name("HeightMap").onChange((val) => {
-            shader.use();
-            shader.setBool("disableHeightMap", val);
-        });
-
+        GUI.add(hdr, "enable").name("hdr");
+        GUI.add(hdr, "exposure", 0.1, 50.0).name("exposure");
+        GUI.add(hdr, "debug").name("debug");
     }
 
     // renderQuad() renders a 1x1 XY quad in NDC
@@ -193,7 +193,7 @@ async function main() {
         if (cubeVAO) {
             let vertices = new Float32Array([
                 // back face
-                - 1.0, -1.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, // bottom-left
+                -1.0, -1.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, // bottom-left
                 1.0, 1.0, -1.0, 0.0, 0.0, -1.0, 1.0, 1.0, // top-right
                 1.0, -1.0, -1.0, 0.0, 0.0, -1.0, 1.0, 0.0, // bottom-right         
                 1.0, 1.0, -1.0, 0.0, 0.0, -1.0, 1.0, 1.0, // top-right

@@ -15,7 +15,7 @@ struct Light {
 
 uniform Light lights[POINT_LIGHTS];
 uniform sampler2D diffuseTexture;
-// uniform vec3 viewPos;
+uniform vec3 viewPos;
 
 void main() {
     vec3 color = texture(diffuseTexture, TexCoords).rgb;
