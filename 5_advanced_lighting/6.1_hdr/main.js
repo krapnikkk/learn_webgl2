@@ -1,6 +1,6 @@
 let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
-let up =  glMatrix.vec3.fromValues(0, 1, 0)
-let camera = new Camera(cameraPos,up,90);
+let up = glMatrix.vec3.fromValues(0, 1, 0)
+let camera = new Camera(cameraPos, up, 90);
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
 
@@ -12,7 +12,8 @@ let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 let hdr = {
     "enable": true,
     "exposure": 0.1,
-    "debug":false
+    "debug": false,
+    "option": 'Reinhard'
 };
 
 async function main() {
@@ -122,7 +123,7 @@ async function main() {
             shader.setVec3(`lights[${i}].Position`, lightPositions[i]);
             shader.setVec3(`lights[${i}].Color`, lightColors[i]);
         }
-        
+
         // render tunnel
         shader.setVec3("viewPos", camera.position);
         shader.setMat4("projection", projection);
@@ -141,6 +142,7 @@ async function main() {
         hdrShader.setBool("hdr", hdr.enable);
         hdrShader.setFloat("exposure", hdr.exposure);
         hdrShader.setBool("debug", hdr.debug);
+        hdrShader.setBool("useExposure", hdr.option == "Exposure");
         renderQuad();
 
         stats.update();
@@ -150,11 +152,20 @@ async function main() {
     requestAnimationFrame(render);
     addGUI();
     function addGUI() {
-        const GUI = new dat.GUI({ name: "HeightMap" });
-
-        GUI.add(hdr, "enable").name("hdr");
-        GUI.add(hdr, "exposure", 0.1, 50.0).name("exposure");
-        GUI.add(hdr, "debug").name("debug");
+        const GUI = new dat.GUI({ name: "hdr" });
+        const folder = GUI.addFolder('Settings');
+        folder.add(hdr, "debug").name("debug");
+        folder.add(hdr, "enable").name("hdr");
+        let exposure;
+        folder.add(hdr, 'option', ['Reinhard', 'Exposure']).onChange((value) => {
+            if (value === 'Exposure') {
+                exposure = folder.add(hdr, "exposure", 0.1, 50.0).name("exposure");
+            } else {
+                if (exposure) {
+                    folder.remove(exposure)
+                }
+            }
+        });
     }
 
     // renderQuad() renders a 1x1 XY quad in NDC
