@@ -157,7 +157,7 @@ async function main() {
 
     function addGUI(gl) {
         const GUI = new dat.GUI({ name: "gammaCorrection" });
-        GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled");
+        GUI.add(gammaCorrection, "gammaEnabled").name("gammaCorrection");
         GUI.add(gammaCorrection, "quadratic").name("quadratic")
 
     }

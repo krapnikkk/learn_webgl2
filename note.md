@@ -41,9 +41,12 @@ webgl1默认使用线性色彩空间，需要开启扩展EXT_sRGB，它为纹理
 - diffuse纹理，这种为物体上色的纹理几乎都是在sRGB空间中的,specular贴图和法线贴图几乎都在线性空间中	
 - gamma校正使你可以在线性空间中进行操作。因为线性空间更符合物理世界，大多数物理公式现在都可以获得较好效果，比如真实的光的衰减。你的光照越真实，使用gamma校正获得漂亮的效果就越容易。这也正是为什么当引进gamma校正时，建议只去调整光照参数的原因。
 
+# 光照模型
+## 传统光照模型
+### Lambert光照
 
-# pbr
-## hdr
+## pbr物理渲染
+### hdr
 hdr 设置[float texture 不可渲染](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/texImage2D)
 ### [webgl1](https://registry.khronos.org/webgl/extensions/OES_texture_float/)
 ```
