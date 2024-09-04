@@ -43,7 +43,10 @@ webgl1默认使用线性色彩空间，需要开启扩展EXT_sRGB，它为纹理
 
 # 光照模型
 ## 传统光照模型
-### Lambert光照
+### Lambert Lighting
+### Half-Lambert
+### Phong Lighting
+### Blin 
 
 ## pbr物理渲染
 ### hdr

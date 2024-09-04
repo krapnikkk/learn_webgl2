@@ -196,12 +196,20 @@ async function main() {
 
         let diffuseFolder = gui.addFolder("Diffuse");
         let diffuse = {
-            enable: true
+            enable: true,
+            half:false
         }
+
         diffuseFolder.add(diffuse,"enable").onChange((enable)=>{
             shader.use();
             shader.setBool("enableDiffuse", enable);
         })
+        
+        diffuseFolder.add(diffuse, "half").name("Half-Lambert").onChange((enable)=>{
+            shader.use();
+            shader.setBool("halfLambert", enable);
+        })
+
         lightFolder.open();
         diffuseFolder.open();
     }

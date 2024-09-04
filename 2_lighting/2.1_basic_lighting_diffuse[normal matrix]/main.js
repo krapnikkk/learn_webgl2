@@ -164,9 +164,9 @@ async function main() {
         lightingShader.setMat4("model", model);
 
         if(!useGPU){ // use cpu
-            let normalMatrix = glMatrix.mat3.create();
-            glMatrix.mat3.normalFromMat4(normalMatrix, model);
-            lightingShader.setMat3("normalMatrix", normalMatrix);
+            let invertMatrix = glMatrix.mat4.create();
+            glMatrix.mat4.invert(invertMatrix, model);
+            lightingShader.setMat4("invertMatrix", invertMatrix);
         }
 
         gl.bindVertexArray(cubeVao);
@@ -210,7 +210,7 @@ async function main() {
             shader.use();
             shader.setBool("enableDiffuse", enable);
         })
-        diffuseFolder.add({useGPU},"useGPU").onChange((enable)=>{
+        diffuseFolder.add({useGPU},"useGPU").name("inverse by gpu").onChange((enable)=>{
             useGPU = enable;
             shader.use();
             shader.setBool("useGPU", enable);

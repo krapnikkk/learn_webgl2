@@ -6,12 +6,13 @@ uniform mat4 projection;
 uniform mat4 model;
 uniform mat4 view;
 uniform bool useGPU;
-uniform mat3 normalMatrix;
+uniform mat4 invertMatrix;
 
 out vec3 FragPos;
 out vec3 Normal;
 void main() {
     FragPos = vec3(model * vec4(aPos, 1.0));
-    Normal = useGPU ? mat3(transpose(inverse(model))) * aNormal : normalMatrix * aNormal;
+    mat4 invertMat4 = useGPU ? inverse(model) : invertMatrix;
+    Normal =  mat3(transpose(invertMat4)) * aNormal;
     gl_Position = projection * view * vec4(FragPos, 1.0);
 }
