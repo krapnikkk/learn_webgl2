@@ -10,7 +10,7 @@ let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
 let hdr = {
-    "enable": true,
+    "enable": false,
     "exposure": 0.1,
     "debug": false,
     "option": 'Reinhard'

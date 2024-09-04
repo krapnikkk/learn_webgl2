@@ -12,7 +12,8 @@ let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 // settings
 var gammaCorrection = {
     gammaEnabled: false,
-    colorSpace: "srgb"
+    quadratic:false,
+
 };
 
 async function main() {
@@ -55,8 +56,7 @@ async function main() {
     gl.enableVertexAttribArray(texCoordLoc);
     gl.bindVertexArray(null);
 
-    let floorTexture = await loadTexture(gl, "../../resources/textures/wood.png");
-    let floorTextureGammaCorrected = await loadTexture(gl, "../../resources/textures/wood_srgb.png", true);
+    let floorTexture = await loadTexture(gl, "../../resources/textures/wood.png",true);
 
     let lightColors = [
         ...glMatrix.vec3.fromValues(0.25, 0.25, 0.25),
@@ -73,7 +73,6 @@ async function main() {
     
     shader.use();
     shader.setInt("floorTexture", 0);
-    shader.setInt("floorTextureGammaCorrected", 0);
 
 
     function render(time) {
@@ -97,15 +96,14 @@ async function main() {
         shader.setVec3("lightColors", [].concat(...lightColors));
         shader.setVec3("viewPos", camera.position);
         shader.setInt("gamma", gammaCorrection.gammaEnabled);
-        shader.setInt("dotLightAttenuation", gammaCorrection.gammaEnabled);
+        shader.setInt("quadratic", gammaCorrection.quadratic);
+        
 
         // floor
         gl.bindVertexArray(planeVAO);
-        if (gammaCorrection.gammaEnabled) {
-            gl.bindTexture(gl.TEXTURE_2D, floorTextureGammaCorrected);
-        } else {
-            gl.bindTexture(gl.TEXTURE_2D, floorTexture);
-        }
+        
+        gl.bindTexture(gl.TEXTURE_2D, floorTexture);
+        
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindVertexArray(null);
@@ -159,19 +157,8 @@ async function main() {
 
     function addGUI(gl) {
         const GUI = new dat.GUI({ name: "gammaCorrection" });
-
-        let colorSpace = {
-            "display-p3": "display-p3",
-            "srgb": "srgb"
-        };
-        GUI.add(gammaCorrection, "colorSpace", colorSpace).name("colorSpace").onChange((val) => {
-            gl.drawingBuffercolorSpaceSRGB = val;
-            gl.unpackcolorSpaceSRGB = val;
-        });
-        GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled").onChange((val) => {
-            gammaCorrection.gammaEnabled = val;
-
-        });
+        GUI.add(gammaCorrection, "gammaEnabled").name("gammaEnabled");
+        GUI.add(gammaCorrection, "quadratic").name("quadratic")
 
     }
 }
@@ -197,18 +184,16 @@ async function loadTexture(gl, url, gammaCorrection = false) {
                 if (channels == 1)
                     format = internalFormat = gl.RED;
                 else if (channels == 3) {
-                    internalFormat = gammaCorrection ? gl.SRGB8 : gl.RGB;
+                    internalFormat = gl.RGB;
                     format = gl.RGB;
                 } else if (channels == 4) {
-                    internalFormat = gammaCorrection ? gl.SRGB8_ALPHA8 : gl.RGBA;
+                    internalFormat = gl.RGBA;
                     format = gl.RGBA;
                 }
                 let texture = gl.createTexture();
                 gl.bindTexture(gl.TEXTURE_2D, texture);
                 gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, format, gl.UNSIGNED_BYTE, img);
-                if (!gammaCorrection) {
-                    gl.generateMipmap(gl.TEXTURE_2D)
-                }
+                gl.generateMipmap(gl.TEXTURE_2D)
 
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
