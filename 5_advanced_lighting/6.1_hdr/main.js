@@ -1,6 +1,5 @@
-let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
-let up = glMatrix.vec3.fromValues(0, 1, 0)
-let camera = new Camera(cameraPos, up, 90);
+
+
 const SCR_WIDTH = 800;
 const SCR_HEIGHT = 600;
 
@@ -24,6 +23,11 @@ async function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
+
+    let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
+    let up = glMatrix.vec3.fromValues(0, 1, 0)
+    let camera = new Camera(cameraPos, up, 90);
+    let cameraController = new CameraController(gl,camera);
 
     // lighting
     let shader = new Shader(gl, "lighting.vs", "lighting.fs");
@@ -101,6 +105,7 @@ async function main() {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
         lastFrame = currentFrame;
+        cameraController.update();
 
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -267,46 +272,11 @@ async function main() {
     }
 
 
-    let moveLock = true;
+    // let moveLock = true;
     document.onkeydown = (e) => {
         camera.onKeydown(e.code, deltaTime);
-
-        if (e.code == "Escape") {
-            moveLock = true;
-        }
     }
 
-    canvas.onclick = (e) => {
-        if (moveLock) {
-            moveLock = false;
-        } else {
-            moveLock = true;
-        }
-        isFirstMouse = true;
-    }
-
-    canvas.onmousemove = (e) => {
-        if (moveLock) {
-            return;
-        }
-        let { clientX, clientY } = e;
-        if (isFirstMouse) {
-            lastX = clientX;
-            lastY = clientY;
-            isFirstMouse = false;
-        }
-        let offsetX = clientX - lastX;
-        let offsetY = lastY - clientY;
-
-        lastX = clientX;
-        lastY = clientY;
-
-        camera.onMousemove(offsetX, offsetY);
-    }
-
-    canvas.onwheel = (e) => {
-        camera.onMouseScroll(e.deltaY / 100);
-    }
 }
 
 async function loadTexture(gl, url, gammaCorrection = false) {
