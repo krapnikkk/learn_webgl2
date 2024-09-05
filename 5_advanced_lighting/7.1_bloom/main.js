@@ -10,8 +10,8 @@ let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
 let hdr = {
     "enable": false,
-    "highLight": true,
     "exposure": 0.1,
+    "debug": false,
     "option": 'Reinhard'
 };
 
@@ -27,7 +27,7 @@ async function main() {
     let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
     let up = glMatrix.vec3.fromValues(0, 1, 0)
     let camera = new Camera(cameraPos, up, 90);
-    let cameraController = new CameraController(gl, camera);
+    let cameraController = new CameraController(gl,camera);
 
     // lighting
     let shader = new Shader(gl, "lighting.vs", "lighting.fs");
@@ -55,7 +55,7 @@ async function main() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
+    // gl.generateMipmap(gl.TEXTURE_2D);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, colorBuffer, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
 
@@ -77,6 +77,7 @@ async function main() {
     gl.bindTexture(gl.TEXTURE_2D, null);
 
 
+
     // Lighting info
     // -------------
     // Positions
@@ -89,7 +90,7 @@ async function main() {
 
     // Colors
     const lightColors = [
-        glMatrix.vec3.fromValues(200.0, 200.0, 200.0),// high light
+        glMatrix.vec3.fromValues(200.0, 200.0, 200.0),
         glMatrix.vec3.fromValues(0.1, 0.0, 0.0),
         glMatrix.vec3.fromValues(0.0, 0.0, 0.2),
         glMatrix.vec3.fromValues(0.0, 0.1, 0.0)
@@ -145,6 +146,7 @@ async function main() {
         gl.bindTexture(gl.TEXTURE_2D, colorBuffer);
         hdrShader.setBool("hdr", hdr.enable);
         hdrShader.setFloat("exposure", hdr.exposure);
+        hdrShader.setBool("debug", hdr.debug);
         hdrShader.setBool("useExposure", hdr.option == "Exposure");
         renderQuad();
 
@@ -157,13 +159,7 @@ async function main() {
     function addGUI() {
         const GUI = new dat.GUI({ name: "hdr" });
         const folder = GUI.addFolder('Settings');
-        folder.add(hdr, "highLight").name("highLight").onChange((value) => {
-            if (value) {
-                lightColors[0] = glMatrix.vec3.fromValues(200.0, 200.0, 200.0);
-            } else {
-                lightColors[0] = glMatrix.vec3.fromValues(0.5, 0.5, 0.5);
-            }
-        });
+        folder.add(hdr, "debug").name("debug");
         folder.add(hdr, "enable").name("hdr");
         let exposure;
         folder.add(hdr, 'option', ['Reinhard', 'Exposure']).onChange((value) => {
@@ -175,7 +171,6 @@ async function main() {
                 }
             }
         });
-
     }
 
     // renderQuad() renders a 1x1 XY quad in NDC

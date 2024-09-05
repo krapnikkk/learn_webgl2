@@ -49,7 +49,12 @@ webgl1默认使用线性色彩空间，需要开启扩展EXT_sRGB，它为纹理
 ### Blinn Phong Lighting 
 
 ## pbr物理渲染
-### hdr
+### HDR本质
+- 显示器被限制为只能显示值为0.0到1.0间的颜色，但是在光照方程中却没有这个限制。通过使片段的颜色超过1.0，我们有了一个更大的颜色范围，这也被称作HDR(High Dynamic Range, 高动态范围)。
+- 有了HDR，亮的东西可以变得非常亮，暗的东西可以变得非常暗，而且充满细节。
+- 用更大范围的颜色值渲染从而获取大范围的黑暗与明亮的场景细节，最后将所有HDR值转换成在[0.0, 1.0]范围的LDR(Low Dynamic Range,低动态范围)。转换HDR值到LDR值得过程叫做色调映射(Tone Mapping).
+
+### hdr在webgl中的设置
 hdr 设置[float texture 不可渲染](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/texImage2D)
 ### [webgl1](https://registry.khronos.org/webgl/extensions/OES_texture_float/)
 ```
