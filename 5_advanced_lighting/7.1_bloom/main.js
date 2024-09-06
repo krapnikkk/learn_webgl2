@@ -27,36 +27,36 @@ async function main() {
     let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
     let up = glMatrix.vec3.fromValues(0, 1, 0)
     let camera = new Camera(cameraPos, up, 90);
-    let cameraController = new CameraController(gl,camera);
+    let cameraController = new CameraController(gl, camera);
 
-    // lighting
-    let shader = new Shader(gl, "lighting.vs", "lighting.fs");
-    await shader.initialize();
-
-    let hdrShader = new Shader(gl, "hdr.vs", "hdr.fs");
-    await hdrShader.initialize();
+    // build and compile shaders
+    // -------------------------
+    let shader = new Shader("bloom.vs", "bloom.fs");
+    let shaderLight = new Shader("bloom.vs", "light_box.fs");
+    let shaderBlur = new Shader("blur.vs", "blur.fs");
+    let shaderBloomFinal = new Shader("bloom_final.vs", "bloom_final.fs");
 
     let woodTexture = await loadTexture(gl, "../../resources/textures/wood.png");
+    let containerTexture = await loadTexture(gl, "../../resources/textures/container2.jpg");
 
     // Create hdrFBO
     const hdrFBO = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
 
-    // Create color buffer
-
-    const colorBuffer = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, colorBuffer);
-
-    // see:https://developer.mozilla.org/en-US/docs/Web/API/EXT_color_buffer_half_float
     gl.getExtension("EXT_color_buffer_half_float");
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    // gl.generateMipmap(gl.TEXTURE_2D);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, colorBuffer, 0);
+    // Create color buffer
+    for (let i = 0; i < 2; i++) {
+        const colorBuffer = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, colorBuffer);
+
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, colorBuffer, 0);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
 
     // Create depth buffer (renderbuffer)
@@ -67,12 +67,48 @@ async function main() {
     // Attach buffers
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rboDepth);
 
+    let attachments = [
+        gl.COLOR_ATTACHMENT0,
+        gl.COLOR_ATTACHMENT1
+    ];
+    gl.drawBuffers(attachments);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
     let bufferStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     if (bufferStatus != gl.FRAMEBUFFER_COMPLETE) {
         console.log("Framebuffer not complete!");
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    
+    // ping-pong-framebuffer for blurring
+    // unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    // glDrawBuffers(2, attachments);
+    // // finally check if framebuffer is complete
+    // if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    //     std::cout << "Framebuffer not complete!" << std::endl;
+    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // // ping-pong-framebuffer for blurring
+    // unsigned int pingpongFBO[2];
+    // unsigned int pingpongColorbuffers[2];
+    // glGenFramebuffers(2, pingpongFBO);
+    // glGenTextures(2, pingpongColorbuffers);
+    // for (unsigned int i = 0; i < 2; i++)
+    // {
+    //     glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+    //     glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    //     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+    //     // also check if framebuffers are complete (no need for depth buffer)
+    //     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    //         std::cout << "Framebuffer not complete!" << std::endl;
+    // }
+
+
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     gl.bindTexture(gl.TEXTURE_2D, null);
 
