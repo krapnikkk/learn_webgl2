@@ -113,7 +113,6 @@ class Camera {
 
 	panZ(v) {
 		this.updateCameraVectors();
-
         this.position[2] += v; //orbit mode does translate after rotate, so only need to set Z, the rotate will handle the rest.
 		
 	}

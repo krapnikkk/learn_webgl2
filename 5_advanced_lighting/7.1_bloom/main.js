@@ -8,12 +8,13 @@ let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
-let hdr = {
+let bloom = {
     "enable": false,
-    "exposure": 0.1,
+    "exposure": 1,
     "debug": false,
     "option": 'Reinhard'
 };
+// let bloom = true,exposure = 1;
 
 async function main() {
     let stats = new Stats();
@@ -31,13 +32,17 @@ async function main() {
 
     // build and compile shaders
     // -------------------------
-    let shader = new Shader("bloom.vs", "bloom.fs");
-    let shaderLight = new Shader("bloom.vs", "light_box.fs");
-    let shaderBlur = new Shader("blur.vs", "blur.fs");
-    let shaderBloomFinal = new Shader("bloom_final.vs", "bloom_final.fs");
+    let shader = new Shader(gl, "bloom.vs", "bloom.fs");
+    await shader.initialize();
+    let shaderLight = new Shader(gl, "bloom.vs", "light_box.fs");
+    await shaderLight.initialize();
+    let shaderBlur = new Shader(gl, "blur.vs", "blur.fs");
+    await shaderBlur.initialize();
+    let shaderBloomFinal = new Shader(gl, "bloom_final.vs", "bloom_final.fs");
+    await shaderBloomFinal.initialize();
 
     let woodTexture = await loadTexture(gl, "../../resources/textures/wood.png");
-    let containerTexture = await loadTexture(gl, "../../resources/textures/container2.jpg");
+    let containerTexture = await loadTexture(gl, "../../resources/textures/container2.png");
 
     // Create hdrFBO
     const hdrFBO = gl.createFramebuffer();
@@ -45,8 +50,11 @@ async function main() {
 
     gl.getExtension("EXT_color_buffer_half_float");
     // Create color buffer
+    let colorBuffers = [];
     for (let i = 0; i < 2; i++) {
         const colorBuffer = gl.createTexture();
+        colorBuffers.push(colorBuffer);
+
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, colorBuffer);
 
@@ -79,63 +87,55 @@ async function main() {
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    
-    // ping-pong-framebuffer for blurring
-    // unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    // glDrawBuffers(2, attachments);
-    // // finally check if framebuffer is complete
-    // if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    //     std::cout << "Framebuffer not complete!" << std::endl;
-    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // // ping-pong-framebuffer for blurring
-    // unsigned int pingpongFBO[2];
-    // unsigned int pingpongColorbuffers[2];
-    // glGenFramebuffers(2, pingpongFBO);
-    // glGenTextures(2, pingpongColorbuffers);
-    // for (unsigned int i = 0; i < 2; i++)
-    // {
-    //     glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
-    //     glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
-    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
-    //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    //     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
-    //     // also check if framebuffers are complete (no need for depth buffer)
-    //     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    //         std::cout << "Framebuffer not complete!" << std::endl;
-    // }
+    let pingpongFBOs = [], pingpongColorbuffers = [];
+    for (let i = 0; i < 2; i++) {
+        let pingpongFBO = gl.createFramebuffer();
+        pingpongFBOs.push(pingpongFBO);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBO);
 
+        let pingpongColorbuffer = gl.createTexture();
+        pingpongColorbuffers.push(pingpongColorbuffer);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, pingpongColorbuffer)
+
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pingpongColorbuffer, 0);
+    }
 
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     gl.bindTexture(gl.TEXTURE_2D, null);
-
-
 
     // Lighting info
     // -------------
     // Positions
     const lightPositions = [
-        glMatrix.vec3.fromValues(0.0, 0.0, 49.5), // back light
-        glMatrix.vec3.fromValues(-1.4, -1.9, 9.0),
-        glMatrix.vec3.fromValues(0.0, -1.8, 4.0),
-        glMatrix.vec3.fromValues(0.8, -1.7, 6.0)
+        glMatrix.vec3.fromValues(0.0, 0.0, 1.5), // back light
+        glMatrix.vec3.fromValues(-4.0, 0.5, -3.0),
+        glMatrix.vec3.fromValues(3.0, 0.5, 1.0),
+        glMatrix.vec3.fromValues(-0.8, 2.4, -1.0)
     ];
 
     // Colors
     const lightColors = [
-        glMatrix.vec3.fromValues(200.0, 200.0, 200.0),
-        glMatrix.vec3.fromValues(0.1, 0.0, 0.0),
-        glMatrix.vec3.fromValues(0.0, 0.0, 0.2),
-        glMatrix.vec3.fromValues(0.0, 0.1, 0.0)
+        glMatrix.vec3.fromValues(5.0, 5.0, 5.0),
+        glMatrix.vec3.fromValues(10.0, 0.0, 0.0),
+        glMatrix.vec3.fromValues(0.0, 0.0, 15.0),
+        glMatrix.vec3.fromValues(0.0, 5.0, 0.0)
     ];
 
     shader.use();
     shader.setInt("diffuseTexture", 0);
-    hdrShader.use();
-    hdrShader.setInt("hdrBuffer", 0);
+    shaderBlur.use();
+    shaderBlur.setInt("image", 0);
+    shaderBloomFinal.use();
+    shaderBloomFinal.setInt("scene", 0);
+    shaderBloomFinal.setInt("bloomBlur", 1);
 
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
@@ -146,15 +146,17 @@ async function main() {
         gl.clearColor(0.1, 0.1, 0.1, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+        // 1. render scene into floating point framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         let view = camera.getViewMatrix();
         let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
 
+        // create one large cube that acts as the floor    
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, 25.0))
-        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(2.5, 2.5, 27.5));
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -1.0, 0.0))
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(12.5, 0.5, 12.5));
 
         shader.use();
         gl.activeTexture(gl.TEXTURE0);
@@ -165,25 +167,93 @@ async function main() {
             shader.setVec3(`lights[${i}].Color`, lightColors[i]);
         }
 
-        // render tunnel
         shader.setVec3("viewPos", camera.position);
         shader.setMat4("projection", projection);
         shader.setMat4("view", view);
         shader.setMat4("model", model);
-
-        shader.setInt("inverse_normals", true);
-
         renderCube();
 
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        hdrShader.use();
+        // then create multiple cubes as the scenery
+        gl.bindTexture(gl.TEXTURE_2D, containerTexture);
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 1.5, 0.0))
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+        shader.setMat4("model", model);
+        renderCube();
 
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 1.0))
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+        shader.setMat4("model", model);
+        renderCube();
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, -1.0, 2.0))
+        let normalize = glMatrix.vec3.create();
+        glMatrix.vec3.normalize(normalize, glMatrix.vec3.fromValues(1.0, 0.0, 1.0))
+        glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(60), normalize);
+        shader.setMat4("model", model);
+        renderCube();
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 2.7, 4.0))
+        glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(23), normalize);
+        shader.setMat4("model", model);
+        renderCube();
+
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-2.0, 1.0, -3.0))
+        glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(124), normalize);
+        shader.setMat4("model", model);
+        renderCube();
+
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-3.0, 0.0, 0.0))
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+        shader.setMat4("model", model);
+        renderCube();
+
+        // finally show all the light sources as bright cubes
+        shaderLight.use();
+        shaderLight.setMat4("projection", projection);
+        shaderLight.setMat4("view", view);
+
+        for (let i = 0; i < lightPositions.length; i++) {
+            model = glMatrix.mat4.identity(glMatrix.mat4.create());
+            glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(lightPositions[i]))
+            glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.25, 0.25, 0.25));
+            shaderLight.setMat4("model", model);
+            shaderLight.setVec3("lightColor", lightColors[i]);
+            renderCube();
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        // 2. blur bright fragments with two-pass Gaussian Blur 
+        let horizontal = true, first_iteration = true;
+        let amount = 10;
+        shaderBlur.use();
+        for (let i = 0; i < amount; i++)
+        {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBOs[horizontal]);
+            shaderBlur.setInt("horizontal", horizontal);
+            gl.bindTexture(gl.TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
+            renderQuad();
+            horizontal = !horizontal;
+            if (first_iteration)
+                first_iteration = false;
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
+        // --------------------------------------------------------------------------------------------------------------------------
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        shaderBloomFinal.use();
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, colorBuffer);
-        hdrShader.setBool("hdr", hdr.enable);
-        hdrShader.setFloat("exposure", hdr.exposure);
-        hdrShader.setBool("debug", hdr.debug);
-        hdrShader.setBool("useExposure", hdr.option == "Exposure");
+        gl.bindTexture(gl.TEXTURE_2D, colorBuffers[0]);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+        shaderBloomFinal.setInt("bloom", bloom.enable);
+        shaderBloomFinal.setFloat("exposure", bloom.exposure);
         renderQuad();
 
         stats.update();
@@ -193,20 +263,20 @@ async function main() {
     requestAnimationFrame(render);
     addGUI();
     function addGUI() {
-        const GUI = new dat.GUI({ name: "hdr" });
+        const GUI = new dat.GUI({ name: "bloom" });
         const folder = GUI.addFolder('Settings');
-        folder.add(hdr, "debug").name("debug");
-        folder.add(hdr, "enable").name("hdr");
-        let exposure;
-        folder.add(hdr, 'option', ['Reinhard', 'Exposure']).onChange((value) => {
-            if (value === 'Exposure') {
-                exposure = folder.add(hdr, "exposure", 0.1, 50.0).name("exposure");
-            } else {
-                if (exposure) {
-                    folder.remove(exposure)
-                }
-            }
-        });
+        // folder.add(hdr, "debug").name("debug");
+        folder.add(bloom, "enable").name("bloom");
+        folder.add(bloom, "exposure", 1, 50.0).name("exposure");
+        // let exposure;
+        // folder.add(hdr, 'option', ['Reinhard', 'Exposure']).onChange((value) => {
+        //     if (value === 'Exposure') {
+        //     } else {
+        //         if (exposure) {
+        //             folder.remove(exposure)
+        //         }
+        //     }
+        // });
     }
 
     // renderQuad() renders a 1x1 XY quad in NDC

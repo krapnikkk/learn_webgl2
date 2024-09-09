@@ -1,7 +1,7 @@
 #version 300 es
 precision mediump float;
-out vec4 FragColor;
-out vec4 BrightColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
 // 一个着色器使用一个布局location修饰符，fragment就会写入对应的颜色缓冲
 // 使用多个像素着色器输出的必要条件是，有多个颜色缓冲附加到了当前绑定的帧缓冲对象上
 
