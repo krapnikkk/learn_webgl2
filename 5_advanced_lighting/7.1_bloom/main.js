@@ -9,10 +9,8 @@ let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
 let bloom = {
-    "enable": false,
+    "enable": true,
     "exposure": 1,
-    "debug": false,
-    "option": 'Reinhard'
 };
 // let bloom = true,exposure = 1;
 
@@ -26,8 +24,8 @@ async function main() {
     gl.enable(gl.DEPTH_TEST);
 
     let cameraPos = glMatrix.vec3.fromValues(0.0, 0.0, 5.0);
-    let up = glMatrix.vec3.fromValues(0, 1, 0)
-    let camera = new Camera(cameraPos, up, 90);
+    // let up = glMatrix.vec3.fromValues(0, 1, 0)
+    let camera = new Camera(cameraPos);
     let cameraController = new CameraController(gl, camera);
 
     // build and compile shaders
@@ -55,7 +53,6 @@ async function main() {
         const colorBuffer = gl.createTexture();
         colorBuffers.push(colorBuffer);
 
-        gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, colorBuffer);
 
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
@@ -65,7 +62,6 @@ async function main() {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, colorBuffer, 0);
     }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
 
     // Create depth buffer (renderbuffer)
     const rboDepth = gl.createRenderbuffer();
@@ -79,8 +75,9 @@ async function main() {
         gl.COLOR_ATTACHMENT0,
         gl.COLOR_ATTACHMENT1
     ];
+
     gl.drawBuffers(attachments);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
+
     let bufferStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     if (bufferStatus != gl.FRAMEBUFFER_COMPLETE) {
         console.log("Framebuffer not complete!");
@@ -97,7 +94,6 @@ async function main() {
         let pingpongColorbuffer = gl.createTexture();
         pingpongColorbuffers.push(pingpongColorbuffer);
 
-        gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, pingpongColorbuffer)
 
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
@@ -106,6 +102,11 @@ async function main() {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pingpongColorbuffer, 0);
+
+        bufferStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        if (bufferStatus != gl.FRAMEBUFFER_COMPLETE) {
+            console.log("Framebuffer not complete!");
+        }
     }
 
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -115,7 +116,7 @@ async function main() {
     // -------------
     // Positions
     const lightPositions = [
-        glMatrix.vec3.fromValues(0.0, 0.0, 1.5), // back light
+        glMatrix.vec3.fromValues(0.0, 0.5, 1.5), // back light
         glMatrix.vec3.fromValues(-4.0, 0.5, -3.0),
         glMatrix.vec3.fromValues(3.0, 0.5, 1.0),
         glMatrix.vec3.fromValues(-0.8, 2.4, -1.0)
@@ -143,7 +144,7 @@ async function main() {
         lastFrame = currentFrame;
         cameraController.update();
 
-        gl.clearColor(0.1, 0.1, 0.1, 1.0);
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // 1. render scene into floating point framebuffer
@@ -232,11 +233,12 @@ async function main() {
         let horizontal = true, first_iteration = true;
         let amount = 10;
         shaderBlur.use();
-        for (let i = 0; i < amount; i++)
-        {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBOs[horizontal]);
+        shaderBlur.setFloatArr("weight", [0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216]);
+
+        for (let i = 0; i < amount; i++) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBOs[horizontal ? 1 : 0]);
             shaderBlur.setInt("horizontal", horizontal);
-            gl.bindTexture(gl.TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
+            gl.bindTexture(gl.TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal ? 1 : 0]);  // bind texture of other framebuffer (or scene if first iteration)
             renderQuad();
             horizontal = !horizontal;
             if (first_iteration)
@@ -247,11 +249,12 @@ async function main() {
         // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
         // --------------------------------------------------------------------------------------------------------------------------
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        debugger
         shaderBloomFinal.use();
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, colorBuffers[0]);
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+        gl.bindTexture(gl.TEXTURE_2D, pingpongColorbuffers[!horizontal ? 1 : 0]);
         shaderBloomFinal.setInt("bloom", bloom.enable);
         shaderBloomFinal.setFloat("exposure", bloom.exposure);
         renderQuad();

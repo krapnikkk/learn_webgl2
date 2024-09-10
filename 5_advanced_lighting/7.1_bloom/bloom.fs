@@ -27,7 +27,7 @@ void main() {
 
     // lighting
 	vec3 lighting = vec3(0.0f);
-	vec3 viewDir = normalize(viewPos - FragPos);
+	// vec3 viewDir = normalize(viewPos - FragPos);
 	for(int i = 0; i < 4; i++) {
 		vec3 lightDir = normalize(lights[i].Position - FragPos);
 		float diff = max(dot(lightDir, normal), 0.0f);
