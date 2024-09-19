@@ -51,13 +51,25 @@ class Model {
                     // get the result file, and convert to string
                     let resultFile = result.GetFile(0);
                     let scene = JSON.parse(new TextDecoder().decode(resultFile.GetContent()));
-                    // console.log(scene);
+                    console.log(scene);
+                    debugger
                     await this.processNode(scene.rootnode, scene);
                     res();
                 });
             });
         })
+    }
 
+    loadScene(url) {
+        return new Promise((res, rej) => {
+            fetch(`${this.directory}/${url}`).then((res) => {
+                return res.json();
+            }).then(scene => {
+                this.processNode(scene.rootnode, scene).then(() => {
+                    res();
+                })
+            })
+        })
     }
 
     async processNode(node, scene) {

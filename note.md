@@ -115,6 +115,11 @@ DistributionGGX里的最后除以的max(denom, 0.001)最好直接改成denom，�
 使用blitFramebuffer从framebuffer中copy深度到屏幕framebuffer时，需要depth internal format匹配
 屏幕的时DEPTH24_STENCIL8
 [stackoverflow](https://stackoverflow.com/questions/9914046/opengl-how-to-use-depthbuffer-from-framebuffer-as-usual-depth-buffer)
+[stackoverflow](https://stackoverflow.com/questions/46170953/i-receive-invalid-operation-when-i-use-glblitframebuffer-to-implement-msaa)
+
+## 延迟渲染
+- 几何阶段：在这个阶段,我们将场景中的几何信息(位置、法线、材质等)渲染到一组称为"延迟渲染缓冲区"的帧缓冲区中。[vs->fs]
+- 光照阶段：在这个阶段,我们使用延迟渲染缓冲区中的信息对场景进行逐像素的光照计算,生成最终的图像。
 
 ## skeletal animation
 gltf格式有定义动画的json，内容是float32array的bin数据文件，能直接被copy到gpu，其他是图片，能加快解析速度

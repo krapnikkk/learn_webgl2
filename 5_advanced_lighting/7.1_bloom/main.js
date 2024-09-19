@@ -243,9 +243,6 @@ async function main() {
             shaderBlur.setInt("horizontal", index);
             gl.bindTexture(gl.TEXTURE_2D, lastTexture);  // bind texture of other framebuffer (or scene if first iteration)
             renderQuad();
-            // horizontal = !horizontal;
-            // if (first_iteration)
-            //     first_iteration = false;
             lastTexture = pingpongColorbuffers[index]
         }
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
