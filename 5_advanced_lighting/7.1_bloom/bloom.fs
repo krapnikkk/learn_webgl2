@@ -7,16 +7,16 @@ layout (location = 1) out vec4 BrightColor;
 
 in vec3 FragPos;
 in vec3 Normal;
-
 in vec2 TexCoords;
+
 struct Light {
 	vec3 Position;
 	vec3 Color;
 };
 
-uniform Light lights[4]; //  setParamter("light[0].Postion", vec3)
-uniform sampler2D diffuseTexture;
+uniform Light lights[4];
 uniform vec3 viewPos;
+uniform sampler2D diffuseTexture;
 
 void main() {
 	vec3 color = texture(diffuseTexture, TexCoords).rgb;
@@ -27,7 +27,7 @@ void main() {
 
     // lighting
 	vec3 lighting = vec3(0.0f);
-	// vec3 viewDir = normalize(viewPos - FragPos);
+	vec3 viewDir = normalize(viewPos - FragPos);
 	for(int i = 0; i < 4; i++) {
 		vec3 lightDir = normalize(lights[i].Position - FragPos);
 		float diff = max(dot(lightDir, normal), 0.0f);

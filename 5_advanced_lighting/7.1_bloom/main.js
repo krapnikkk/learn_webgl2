@@ -12,13 +12,12 @@ let bloom = {
     "enable": true,
     "exposure": 1,
 };
-// let bloom = true,exposure = 1;
 
 async function main() {
     let stats = new Stats();
     document.body.appendChild(stats.dom);
 
-    const gl = document.getElementById("canvas").getContext("webgl2", { "antialias": true });
+    const gl = document.getElementById("canvas").getContext("webgl2");
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
@@ -88,13 +87,13 @@ async function main() {
     let pingpongFBOs = [], pingpongColorbuffers = [];
     for (let i = 0; i < 2; i++) {
         let pingpongFBO = gl.createFramebuffer();
-        pingpongFBOs.push(pingpongFBO);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBO);
-
         let pingpongColorbuffer = gl.createTexture();
-        pingpongColorbuffers.push(pingpongColorbuffer);
 
-        gl.bindTexture(gl.TEXTURE_2D, pingpongColorbuffer)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBO);
+        gl.bindTexture(gl.TEXTURE_2D, pingpongColorbuffer);
+
+        pingpongFBOs.push(pingpongFBO);
+        pingpongColorbuffers.push(pingpongColorbuffer);
 
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -124,42 +123,44 @@ async function main() {
 
     // Colors
     const lightColors = [
-        glMatrix.vec3.fromValues(5.0, 5.0, 5.0),
-        glMatrix.vec3.fromValues(10.0, 0.0, 0.0),
-        glMatrix.vec3.fromValues(0.0, 0.0, 15.0),
-        glMatrix.vec3.fromValues(0.0, 5.0, 0.0)
+        glMatrix.vec3.fromValues(5.0, 5.0, 5.0), // white
+        glMatrix.vec3.fromValues(10.0, 0.0, 0.0), // red
+        glMatrix.vec3.fromValues(0.0, 0.0, 15.0), // blue
+        glMatrix.vec3.fromValues(0.0, 5.0, 0.0) // green
+
     ];
 
     shader.use();
     shader.setInt("diffuseTexture", 0);
     shaderBlur.use();
     shaderBlur.setInt("image", 0);
+    // shaderBlur.setFloatArr("weight", [0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216]);
     shaderBloomFinal.use();
     shaderBloomFinal.setInt("scene", 0);
     shaderBloomFinal.setInt("bloomBlur", 1);
 
+    let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+    glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
         lastFrame = currentFrame;
         cameraController.update();
-
+        
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
+        
         // 1. render scene into floating point framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, hdrFBO);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        let view = camera.getViewMatrix();
-        let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
-
-        // create one large cube that acts as the floor    
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -1.0, 0.0))
-        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(12.5, 0.5, 12.5));
+        let view = camera.getViewMatrix();
+
+        
 
         shader.use();
+        shader.setMat4("projection", projection);
+        shader.setMat4("view", view);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, woodTexture);
 
@@ -167,10 +168,10 @@ async function main() {
             shader.setVec3(`lights[${i}].Position`, lightPositions[i]);
             shader.setVec3(`lights[${i}].Color`, lightColors[i]);
         }
-
-        shader.setVec3("viewPos", camera.position);
-        shader.setMat4("projection", projection);
-        shader.setMat4("view", view);
+        // shader.setVec3("viewPos", camera.position);
+        // create one large cube that acts as the floor    
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -1.0, 0.0));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(12.5, 0.5, 12.5));
         shader.setMat4("model", model);
         renderCube();
 
@@ -182,15 +183,16 @@ async function main() {
         shader.setMat4("model", model);
         renderCube();
 
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(2.0, 0.0, 1.0))
         glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
         shader.setMat4("model", model);
         renderCube();
 
-        model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, -1.0, 2.0))
         let normalize = glMatrix.vec3.create();
         glMatrix.vec3.normalize(normalize, glMatrix.vec3.fromValues(1.0, 0.0, 1.0))
+        model = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-1.0, -1.0, 2.0))
         glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(60), normalize);
         shader.setMat4("model", model);
         renderCube();
@@ -198,6 +200,7 @@ async function main() {
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
         glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 2.7, 4.0))
         glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(23), normalize);
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(1.25, 1.25, 1.25));
         shader.setMat4("model", model);
         renderCube();
 
@@ -221,7 +224,7 @@ async function main() {
 
         for (let i = 0; i < lightPositions.length; i++) {
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
-            glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(lightPositions[i]))
+            glMatrix.mat4.translate(model, model, lightPositions[i])
             glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.25, 0.25, 0.25));
             shaderLight.setMat4("model", model);
             shaderLight.setVec3("lightColor", lightColors[i]);
@@ -230,31 +233,31 @@ async function main() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         // 2. blur bright fragments with two-pass Gaussian Blur 
-        let horizontal = true, first_iteration = true;
+        let lastTexture = colorBuffers[1];
         let amount = 10;
         shaderBlur.use();
-        shaderBlur.setFloatArr("weight", [0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216]);
 
         for (let i = 0; i < amount; i++) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBOs[horizontal ? 1 : 0]);
-            shaderBlur.setInt("horizontal", horizontal);
-            gl.bindTexture(gl.TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal ? 1 : 0]);  // bind texture of other framebuffer (or scene if first iteration)
+            let index = i % 2;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBOs[index]);
+            shaderBlur.setInt("horizontal", index);
+            gl.bindTexture(gl.TEXTURE_2D, lastTexture);  // bind texture of other framebuffer (or scene if first iteration)
             renderQuad();
-            horizontal = !horizontal;
-            if (first_iteration)
-                first_iteration = false;
+            // horizontal = !horizontal;
+            // if (first_iteration)
+            //     first_iteration = false;
+            lastTexture = pingpongColorbuffers[index]
         }
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
         // --------------------------------------------------------------------------------------------------------------------------
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        debugger
         shaderBloomFinal.use();
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, colorBuffers[0]);
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, pingpongColorbuffers[!horizontal ? 1 : 0]);
+        gl.bindTexture(gl.TEXTURE_2D, lastTexture);
         shaderBloomFinal.setInt("bloom", bloom.enable);
         shaderBloomFinal.setFloat("exposure", bloom.exposure);
         renderQuad();
@@ -268,26 +271,15 @@ async function main() {
     function addGUI() {
         const GUI = new dat.GUI({ name: "bloom" });
         const folder = GUI.addFolder('Settings');
-        // folder.add(hdr, "debug").name("debug");
         folder.add(bloom, "enable").name("bloom");
-        folder.add(bloom, "exposure", 1, 50.0).name("exposure");
-        // let exposure;
-        // folder.add(hdr, 'option', ['Reinhard', 'Exposure']).onChange((value) => {
-        //     if (value === 'Exposure') {
-        //     } else {
-        //         if (exposure) {
-        //             folder.remove(exposure)
-        //         }
-        //     }
-        // });
+        folder.add(bloom, "exposure", 1.0, 2.0).name("exposure");
     }
 
     // renderQuad() renders a 1x1 XY quad in NDC
     // -----------------------------------------
-    let quadVAO = gl.createVertexArray();
-    let quadVBO = gl.createBuffer();
+    let quadVAO, quadVBO;
     function renderQuad() {
-        if (quadVAO) {
+        if (!quadVAO) {
             let quadVertices = new Float32Array([
                 // positions        // texture Coords
                 - 1.0, 1.0, 0.0, 0.0, 1.0,
@@ -296,6 +288,8 @@ async function main() {
                 1.0, -1.0, 0.0, 1.0, 0.0,
             ]);
             // setup plane VAO
+            quadVAO = gl.createVertexArray();
+            quadVBO = gl.createBuffer();
             gl.bindVertexArray(quadVAO);
             gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
             gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
@@ -311,11 +305,10 @@ async function main() {
 
     // renderCube() renders a 1x1 3D cube in NDC.
     // -------------------------------------------------
-    let cubeVAO = gl.createVertexArray();
-    let cubeVBO = gl.createBuffer();
+    let cubeVAO, cubeVBO;
     function renderCube() {
         // initialize (if necessary)
-        if (cubeVAO) {
+        if (!cubeVAO) {
             let vertices = new Float32Array([
                 // back face
                 -1.0, -1.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, // bottom-left
@@ -360,6 +353,8 @@ async function main() {
                 -1.0, 1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
                 -1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0  // bottom-left        
             ]);
+            cubeVAO = gl.createVertexArray();
+            cubeVBO = gl.createBuffer();
             // fill buffer
             gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
             gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);

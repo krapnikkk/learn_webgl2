@@ -12,12 +12,10 @@ uniform sampler2D image;
 // 并且 水平权重和垂直权重一样 另外还镜像 -- 高斯卷积核9x9, 只要 5个参数即可
 // 两步高斯模糊  32×32的模糊kernel 只需要 32+32次采样
 uniform bool horizontal;
-uniform float weight[5];
-// uniform float weight[5] = float[] (0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
-
 void main()
 {             
-     ivec2 tex_offset = ivec2(1.0) / textureSize(image, 0); // gets size of single texel
+     float weight[5] = float[] (0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
+     vec2 tex_offset = vec2(1) / vec2(textureSize(image, 0)); // gets size of single texel
 
      vec3 result = texture(image, TexCoords).rgb * weight[0];
 
@@ -25,16 +23,16 @@ void main()
      {
          for(int i = 1; i < 5; ++i)
          {
-            result += texture(image,  TexCoords + vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
-            result += texture(image,  TexCoords  - vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
+            result += texture(image,  TexCoords + vec2(tex_offset.x * float(i), 0.0)).rgb * weight[i];
+            result += texture(image,  TexCoords  - vec2(tex_offset.x * float(i), 0.0)).rgb * weight[i];
          }
      }
      else
      {
          for(int i = 1; i < 5; ++i)
          {
-             result += texture(image,  TexCoords  + vec2( 0.0,  tex_offset.y * i)).rgb * weight[i];
-             result += texture(image,  TexCoords  - vec2 ( 0.0,  tex_offset.y * i)).rgb * weight[i];
+             result += texture(image,  TexCoords  + vec2( 0.0,  tex_offset.y * float(i))).rgb * weight[i];
+             result += texture(image,  TexCoords  - vec2 ( 0.0,  tex_offset.y * float(i))).rgb * weight[i];
          }
      }
      FragColor = vec4(result, 1.0);

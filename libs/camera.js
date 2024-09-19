@@ -1,26 +1,22 @@
 const YAW = -90.0;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
 const PITCH = 0.0;
-const ZOOM = 45.0;
-const SENSITIVITY = 0.1;
 const SPEED = 5;
+const SENSITIVITY = 0.1;
+const ZOOM = 45.0;
 
 class Camera {
     position;
-    front;
+    front = glMatrix.vec3.fromValues(0, 0, -1);
     up = glMatrix.vec3.create();
     right = glMatrix.vec3.create();
     worldUp;
     yaw;
     pitch;
     // camera options
-    movementSpeed;
-    mouseSensitivity;
-    zoom;
+    movementSpeed = SPEED;
+    mouseSensitivity = SENSITIVITY;
+    zoom = ZOOM;
     constructor(position = glMatrix.vec3.fromValues(0, 0, 0), up = glMatrix.vec3.fromValues(0, 1, 0), yaw = YAW, pitch = PITCH) {
-        this.front = glMatrix.vec3.fromValues(0, 0, -1);
-        this.movementSpeed = SPEED;
-        this.mouseSensitivity = SENSITIVITY;
-        this.zoom = ZOOM;
         this.position = position;
         this.worldUp = up;
         this.yaw = yaw;
@@ -114,7 +110,6 @@ class Camera {
 	panZ(v) {
 		this.updateCameraVectors();
         this.position[2] += v; //orbit mode does translate after rotate, so only need to set Z, the rotate will handle the rest.
-		
 	}
 
 }
