@@ -121,9 +121,9 @@ async function main() {
         let yPos = Math.random() * 15.0 - 4.0;
         let zPos = Math.random() * 10.0 - 3.0;
         lightPositions.push(glMatrix.vec3.fromValues(xPos, yPos, zPos));
-        let rColor = Math.random()* 0.5 + 0.5;
-        let gColor = Math.random()* 0.5 + 0.5;
-        let bColor = Math.random()* 0.5 + 0.5;
+        let rColor = Math.random()* 10 + 0.5;
+        let gColor = Math.random()* 10 + 0.5;
+        let bColor = Math.random()* 10 + 0.5;
         lightColors.push(glMatrix.vec3.fromValues(rColor, gColor, bColor));
     }
 

@@ -173,7 +173,7 @@ async function main() {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT3, gl.TEXTURE_2D, pingpongColorbuffer, 0);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pingpongColorbuffer, 0);
 
         bufferStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
         if (bufferStatus != gl.FRAMEBUFFER_COMPLETE) {
@@ -283,7 +283,7 @@ async function main() {
         // finally render quad
         renderQuad();
 
-        // gl.clear(gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
 
         // 2.5. copy content of geometry's depth buffer to default framebuffer's depth buffer
         // ----------------------------------------------------------------------------------
@@ -316,6 +316,7 @@ async function main() {
         let lastTexture = colorBuffers[1];
         let amount = 10;
         shaderBlur.use();
+        gl.activeTexture(gl.TEXTURE0);
         for (let i = 0; i < amount; i++) {
             let index = i % 2;
             gl.bindFramebuffer(gl.FRAMEBUFFER, pingpongFBOs[index]);
