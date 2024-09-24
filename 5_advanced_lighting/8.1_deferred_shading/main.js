@@ -24,7 +24,7 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let cameraPos = glMatrix.vec3.fromValues(0.0, 5.0, 10.0);
+    let cameraPos = glMatrix.vec3.fromValues(0.0, 2.0, 10.0);
     // let up = glMatrix.vec3.fromValues(0, 1, 0)
     let camera = new Camera(cameraPos);
     let cameraController = new CameraController(gl, camera);
@@ -156,7 +156,7 @@ async function main() {
         for (let i = 0; i < objectPositions.length; i++) {
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
             glMatrix.mat4.translate(model, model, objectPositions[i]);
-            glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+            glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.25, 0.25, 0.25));
             shaderGeometryPass.setMat4("model", model);
             obj.draw(shaderGeometryPass);
         }

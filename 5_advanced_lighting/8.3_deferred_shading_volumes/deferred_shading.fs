@@ -20,7 +20,7 @@ const int NR_LIGHTS = 32;
 uniform Light lights[NR_LIGHTS];
 uniform vec3 viewPos;
 
-uniform bool lightVolume;
+uniform bool debug;
 
 void main() {             
     // retrieve data from gbuffer
@@ -30,7 +30,7 @@ void main() {
     float Specular = texture(gAlbedoSpec, TexCoords).a;
 
 	// #if 0 
-    if(lightVolume && abs(Normal.x) < 1e-6f && abs(Normal.y) < 1e-6f && abs(Normal.z) < 1e-6f) {
+    if(debug && abs(Normal.x) < 1e-6f && abs(Normal.y) < 1e-6f && abs(Normal.z) < 1e-6f) {
         discard;
     }
 	// #endif 

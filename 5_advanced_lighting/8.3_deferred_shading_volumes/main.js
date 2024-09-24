@@ -9,8 +9,8 @@ let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
 let lightVolumes = {
-    "enable": true,
-    "constant": 1,
+    "debug": false,
+    "radius": 2.0,
 };
 
 async function main() {
@@ -24,7 +24,7 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let cameraPos = glMatrix.vec3.fromValues(0.0, 5.0, 10.0);
+    let cameraPos = glMatrix.vec3.fromValues(0.0, 2.0, 10.0);
     // let up = glMatrix.vec3.fromValues(0, 1, 0)
     let camera = new Camera(cameraPos);
     let cameraController = new CameraController(gl, camera);
@@ -118,8 +118,8 @@ async function main() {
     const lightPositions = [], lightColors = [];
     for (let i = 0; i < 32; i++) {
         let xPos = Math.random() * 6.0 - 3.0;
-        let yPos = Math.random() * 15.0 - 4.0;
-        let zPos = Math.random() * 10.0 - 3.0;
+        let yPos = Math.random() * 6.0 - 4.0;
+        let zPos = Math.random() * 6.0 - 3.0;
         lightPositions.push(glMatrix.vec3.fromValues(xPos, yPos, zPos));
         let rColor = Math.random()* 10 + 0.5;
         let gColor = Math.random()* 10 + 0.5;
@@ -156,7 +156,7 @@ async function main() {
         for (let i = 0; i < objectPositions.length; i++) {
             model = glMatrix.mat4.identity(glMatrix.mat4.create());
             glMatrix.mat4.translate(model, model, objectPositions[i]);
-            glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+            glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.25, 0.25, 0.25));
             shaderGeometryPass.setMat4("model", model);
             obj.draw(shaderGeometryPass);
         }
@@ -210,16 +210,19 @@ async function main() {
 					    渲染这个四边形甚至更轻，因为只有两个三角形。
 			*/ 
             // const constant = 1.0;
-            const constant = lightVolumes.constant;
+            const constant = 1.0;
             const linear = 0.7;
             const quadratic = 1.8;
-            shaderLightingPass.setBool(`lightVolume`, lightVolumes.enable);
             shaderLightingPass.setFloat(`lights[${i}].Linear`, linear);
             shaderLightingPass.setFloat(`lights[${i}].Quadratic`, quadratic);
+            if(lightVolumes.debug){
+                shaderLightingPass.setFloat(`lights[${i}].Radius`, lightVolumes.radius);
+            }else{
+                const maxBrightness = Math.max(Math.max(lightColors[i][0], lightColors[i][1]), lightColors[i][2]);
+                let radius = (-linear + Math.sqrt(linear * linear - 4 * quadratic * (constant - (256.0 / 5.0) * maxBrightness))) / (2.0 * quadratic);
+                shaderLightingPass.setFloat(`lights[${i}].Radius`, radius);
+            }
 
-            const maxBrightness = Math.max(Math.max(lightColors[i][0], lightColors[i][1]), lightColors[i][2]);
-            let radius = (-linear + Math.sqrt(linear * linear - 4 * quadratic * (constant - (256.0 / 5.0) * maxBrightness))) / (2.0 * quadratic);
-            shaderLightingPass.setFloat(`lights[${i}].Radius`, radius);
         }
         shaderLightingPass.setVec3("viewPos", camera.position);
         // finally render quad
@@ -261,8 +264,8 @@ async function main() {
     function addGUI() {
         const GUI = new dat.GUI({ name: "lightVolumes" });
         const folder = GUI.addFolder('Settings');
-        folder.add(lightVolumes, "enable").name("lightVolume");
-        folder.add(lightVolumes, "constant", 1.0, 5.0).name("constant");
+        folder.add(lightVolumes, "debug").name("debug");
+        folder.add(lightVolumes, "radius", 1.0, 10.0).name("radius");
     }
 
     // renderQuad() renders a 1x1 XY quad in NDC
