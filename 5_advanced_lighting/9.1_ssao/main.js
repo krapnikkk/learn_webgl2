@@ -8,9 +8,10 @@ let lastFrame = 0.0;
 let isFirstMouse = true;
 let lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 
-let lightVolumes = {
-    "debug": false,
-    "radius": 2.0,
+let ssao = {
+    "randomRotate": true,
+    "blur": true,
+    "enable": true,
 };
 
 function ourLerp(start, end, t) {
@@ -28,9 +29,10 @@ async function main() {
 
     gl.enable(gl.DEPTH_TEST);
 
-    let cameraPos = glMatrix.vec3.fromValues(0.0, 2.0, 10.0);
-    // let up = glMatrix.vec3.fromValues(0, 1, 0)
-    let camera = new Camera(cameraPos);
+    let cameraPos = glMatrix.vec3.fromValues(4.5, 3.3, -1.0);
+    let up = glMatrix.vec3.fromValues(-0.5, 0.8, 0.18)
+    let camera = new Camera(cameraPos, up, -200, -30);
+    // let camera = new Camera(glMatrix.vec3.fromValues(0.0, 0.0, 5.0));
     let cameraController = new CameraController(gl, camera);
 
     // build and compile shaders
@@ -125,7 +127,7 @@ async function main() {
     // and blur stage
     gl.bindFramebuffer(gl.FRAMEBUFFER, blurFBO);
     const ssaoBlurColorBuffer = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, ssaoColorBuffer);
+    gl.bindTexture(gl.TEXTURE_2D, ssaoBlurColorBuffer);
 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -147,14 +149,13 @@ async function main() {
         let sample = glMatrix.vec3.fromValues(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, Math.random());
         glMatrix.vec3.normalize(sample, sample);
         let rnd = Math.random();
-        glMatrix.vec3.multiply(sample,sample,glMatrix.vec3.fromValues(rnd,rnd,rnd))
+        glMatrix.vec3.multiply(sample, sample, glMatrix.vec3.fromValues(rnd, rnd, rnd))
         let scale = i / 64.0;
 
         // scale samples s.t. they're more aligned to center of kernel
         scale = ourLerp(0.1, 1.0, scale * scale);
-        glMatrix.vec3.multiply(sample,sample,glMatrix.vec3.fromValues(scale,scale,scale))
+        glMatrix.vec3.multiply(sample, sample, glMatrix.vec3.fromValues(scale, scale, scale))
         // sample *= scale;
-        debugger
         ssaoKernel.push(sample);
     }
 
@@ -162,19 +163,21 @@ async function main() {
     // ----------------------
     let ssaoNoise = [];
     for (let i = 0; i < 16; i++) {
-        let noise = glMatrix.vec3.fromValues(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0); // rotate around z-axis (in tangent space)
-        ssaoNoise.push(noise);
+        // let noise = glMatrix.vec3.fromValues(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0); // rotate around z-axis (in tangent space)
+        // ssaoNoise.push(noise);
+        ssaoNoise.push(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0, 1.0)
     }
     let noiseTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, noiseTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, 4, 4, 0, gl.RGBA, gl.FLOAT, ssaoNoise);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, 4, 4, 0, gl.RGBA, gl.FLOAT, new Float32Array(ssaoNoise));
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
 
     // Lighting info
-    const lightPos = glMatrix.vec3.fromValues(2.0, 4.0, -2.0), lightColor = glMatrix.vec3.fromValues(0.2, 0.2, 0.7);
+    const lightPos = glMatrix.vec3.fromValues(2.0, 4.0, -2.0),
+        lightColor = glMatrix.vec3.fromValues(0.2, 0.2, 0.7);
 
     lightingPassShader.use();
     lightingPassShader.setInt("gPosition", 0);
@@ -189,8 +192,6 @@ async function main() {
     BlurShader.setInt("ssaoInput", 0);
 
 
-    let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
-    glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
     function render(time) {
         let currentFrame = Math.round(time) / 1000;
         deltaTime = Math.floor(currentFrame * 1000 - lastFrame * 1000) / 1000;
@@ -205,14 +206,16 @@ async function main() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         let model = glMatrix.mat4.identity(glMatrix.mat4.create());
         let view = camera.getViewMatrix();
+        let projection = glMatrix.mat4.identity(glMatrix.mat4.create());
+        glMatrix.mat4.perspective(projection, glMatrix.glMatrix.toRadian(camera.zoom), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 100)
 
         geometryPassShader.use();
         geometryPassShader.setMat4("projection", projection);
         geometryPassShader.setMat4("view", view);
         // room cube
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 7.0, 0.0));
-        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(7.5, 7.5, 7.5));
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 18.0, 0.0));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(20, 20.0, 20));
         geometryPassShader.setMat4("model", model);
         geometryPassShader.setInt("invertedNormals", 1); // invert normals as we're inside the cube
         renderCube();
@@ -220,9 +223,9 @@ async function main() {
 
         // model on the floor
         model = glMatrix.mat4.identity(glMatrix.mat4.create());
-        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.5, 0.0));
+        glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, 5.0));
         glMatrix.mat4.rotate(model, model, glMatrix.glMatrix.toRadian(-90), glMatrix.vec3.fromValues(1.0, 0.0, 0.0));
-        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
+        glMatrix.mat4.scale(model, model, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
         geometryPassShader.setMat4("model", model);
         obj.draw(geometryPassShader);
 
@@ -232,6 +235,7 @@ async function main() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, SSAOFBO);
         gl.clear(gl.COLOR_BUFFER_BIT);
         SSAOShader.use();
+        SSAOShader.setBool("randomRotate", ssao.randomRotate);
         for (let i = 0; i < 64; i++) {
             SSAOShader.setVec3("samples[" + i + "]", ssaoKernel[i]);
         }
@@ -249,35 +253,51 @@ async function main() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, blurFBO);
         gl.clear(gl.COLOR_BUFFER_BIT);
         BlurShader.use();
+        BlurShader.setInt("blur", ssao.blur);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, ssaoColorBuffer);
         renderQuad();
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         // 4. lighting pass: traditional deferred Blinn-Phong lighting with added screen-space ambient occlusion
         // -----------------------------------------------------------------------------------------------------
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        lightingPassShader.use();
-        let lightPosView = glMatrix.vec4.fromValues(...lightPos, 1.0);
-        glMatrix.vec3.multiply(lightPosView, lightPosView, view);
+        if (ssao.enable) {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            lightingPassShader.use();
+            let lightPosView = glMatrix.vec3.fromValues(...lightPos);
+            glMatrix.vec3.multiply(lightPosView, view, lightPosView);
 
-        debugger
-        lightingPassShader.setVec3("light.Position", lightPosView);
-        lightingPassShader.setVec3("light.Color", lightColor);
+            lightingPassShader.setVec3("light.Position", lightPosView);
+            lightingPassShader.setVec3("light.Color", lightColor);
 
-        // Update attenuation parameters
-        let linear = 0.09;
-        let quadratic = 0.032;
-        lightingPassShader.setFloat("light.Linear", linear);
-        lightingPassShader.setFloat("light.Quadratic", quadratic);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, gPosition);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, gNormal);
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, gAlbedo);
-        gl.activeTexture(gl.TEXTURE3);
-        gl.bindTexture(gl.TEXTURE_2D, blurFBO);
-        renderQuad();
+            // Update attenuation parameters
+            let linear = 0.09;
+            let quadratic = 0.032;
+            lightingPassShader.setFloat("light.Linear", linear);
+            lightingPassShader.setFloat("light.Quadratic", quadratic);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, gPosition);
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, gNormal);
+            gl.activeTexture(gl.TEXTURE2);
+            gl.bindTexture(gl.TEXTURE_2D, gAlbedo);
+            gl.activeTexture(gl.TEXTURE3);
+            gl.bindTexture(gl.TEXTURE_2D, ssaoBlurColorBuffer);
+            renderQuad();
+        } else {
+			gl.drawBuffers([gl.BACK]);
+			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, blurFBO);
+			gl.readBuffer(gl.COLOR_ATTACHMENT0);
+
+			gl.blitFramebuffer(
+				0, 0, SCR_WIDTH, SCR_HEIGHT,
+				0, 0, SCR_WIDTH, SCR_HEIGHT,
+				gl.COLOR_BUFFER_BIT,
+				gl.NEAREST
+				);
+			// blurFBO 只有R通道  红色=1 代表环境光没有遮挡 0=黑色有遮挡
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+
 
         stats.update();
         requestAnimationFrame(render);
@@ -286,10 +306,11 @@ async function main() {
     requestAnimationFrame(render);
     addGUI();
     function addGUI() {
-        const GUI = new dat.GUI({ name: "lightVolumes" });
+        const GUI = new dat.GUI({ name: "ssao" });
         const folder = GUI.addFolder('Settings');
-        folder.add(lightVolumes, "debug").name("debug");
-        folder.add(lightVolumes, "radius", 1.0, 10.0).name("radius");
+        folder.add(ssao, "enable").name("enable");
+        folder.add(ssao, "blur").name("blur");
+        folder.add(ssao, "randomRotate").name("randomRotate");
     }
 
     // renderQuad() renders a 1x1 XY quad in NDC

@@ -95,6 +95,7 @@ class Camera {
             glMatrix.vec3.scale(cameraTarget, cameraTarget, velocity);
             glMatrix.vec3.add(this.position, this.position, cameraTarget);
         }
+        // console.log(this.position,this.up,this.yaw,this.pitch)
     }
 
     panX(v) {
