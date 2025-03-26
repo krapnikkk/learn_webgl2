@@ -107,7 +107,7 @@
                     for (let i = 0; i < list.length; i++) {
                         let li = document.createElement("li");
                         let url = list[i];
-                        let title = url.split("/")[1];
+                        let title = url.split("/")[0];
                         if (!titleMap[title]) {
                             titleMap[title] = 1;
                             let titleLi = document.createElement("li");
@@ -121,7 +121,7 @@
                         }
                         let a = document.createElement("a");
                         a.href = `#${i}`;
-                        let name = url.split("/")[2];
+                        let name = url.split("/")[1];
                         a.innerHTML = name;
                         a.onclick = function () {
                             loadPage(url);

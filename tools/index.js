@@ -22,6 +22,6 @@ function traverseDirectory(directoryPath) {
   });
 }
 
-traverseDirectory("../");
+traverseDirectory("./");
 list.pop();
-fs.writeFileSync('./list.json',JSON.stringify({list}))
+fs.writeFileSync('./tools/list.json',JSON.stringify({list}))
