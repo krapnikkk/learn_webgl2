@@ -18,7 +18,7 @@ function traverseDirectory(directoryPath) {
         if(filePath.endsWith('.html')){
             const rel = path.relative(root, filePath).replace(/\\/g, '/');
             if (rel !== 'index.html') {
-                list.push(`./${rel}`)
+                list.push(rel)
             }
         }
     //   console.log('File:', filePath);
@@ -27,4 +27,4 @@ function traverseDirectory(directoryPath) {
 }
 
 traverseDirectory(root);
-fs.writeFileSync(path.join(__dirname, 'list.json'),JSON.stringify({list}))
+fs.writeFileSync(path.join(__dirname, 'list.json'), JSON.stringify({ list }));

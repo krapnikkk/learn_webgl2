@@ -494,7 +494,7 @@ function pickTopic(section, slug) {
     if (slug.includes('bloom')) return byKey('bloom');
     if (slug.includes('ssao')) return byKey('ssao');
   }
-  if (section === '6.pbr') return byKey('pbr_lighting');
+  if (section === '6.pbr' || section === '6_pbr') return byKey('pbr_lighting');
   return byKey('hello_window');
 }
 
@@ -523,6 +523,7 @@ function sectionTitle(section) {
     '4_advance_opengl': 'Advanced OpenGL',
     '5_advanced_lighting': 'Advanced Lighting',
     '6.pbr': 'PBR',
+    '6_pbr': 'PBR',
   }[section] || section;
 }
 
