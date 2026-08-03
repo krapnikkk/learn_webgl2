@@ -81,7 +81,7 @@ class Camera {
         if (code == "KeyW" || code =="ArrowUp") {
             glMatrix.vec3.scale(cameraTarget, this.front, velocity);
             glMatrix.vec3.add(this.position, this.position, cameraTarget);
-        } else if (code == "KeyS" || code == "ArrowUp") {
+        } else if (code == "KeyS" || code == "ArrowDown") {
             glMatrix.vec3.scale(cameraTarget, this.front, velocity);
             glMatrix.vec3.subtract(this.position, this.position, cameraTarget);
         } else if (code == "KeyA" || code == "ArrowLeft") {

@@ -184,10 +184,10 @@ async function loadTexture(gl, url, gammaCorrection = false) {
                 if (channels == 1)
                     format = internalFormat = gl.RED;
                 else if (channels == 3) {
-                    internalFormat = gl.RGB;
-                    format = gl.RGB;
+                    internalFormat = gammaCorrection ? gl.SRGB8_ALPHA8 : gl.RGB;
+                    format = gammaCorrection ? gl.RGBA : gl.RGB;
                 } else if (channels == 4) {
-                    internalFormat = gl.RGBA;
+                    internalFormat = gammaCorrection ? gl.SRGB8_ALPHA8 : gl.RGBA;
                     format = gl.RGBA;
                 }
                 let texture = gl.createTexture();

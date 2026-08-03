@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const root = path.resolve(__dirname, '..');
 const list = [];
 function traverseDirectory(directoryPath) {
   const files = fs.readdirSync(directoryPath).sort((a,b)=>{
@@ -14,14 +15,16 @@ function traverseDirectory(directoryPath) {
     //   console.log('Directory:', filePath);
       traverseDirectory(filePath); // 递归遍历子文件夹
     } else {
-        if(filePath.indexOf('.html') > -1){
-            list.push(filePath.replace(/\\/g,'/').replace('../','./'))
+        if(filePath.endsWith('.html')){
+            const rel = path.relative(root, filePath).replace(/\\/g, '/');
+            if (rel !== 'index.html') {
+                list.push(`./${rel}`)
+            }
         }
     //   console.log('File:', filePath);
     }
   });
 }
 
-traverseDirectory("../");
-list.pop();
-fs.writeFileSync('./list.json',JSON.stringify({list}))
+traverseDirectory(root);
+fs.writeFileSync(path.join(__dirname, 'list.json'),JSON.stringify({list}))
